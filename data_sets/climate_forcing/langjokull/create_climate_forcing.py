@@ -44,7 +44,7 @@ time_var = nc.variables['time']
 var = "climatic_mass_balance"
 cmb_var = nc.createVariable(var, "double", dimensions=("time", "y", "x"))
 cmb_var.units = "kg m-2 year-1"
-cmb_var.mapping = "Lambert_Conformal"
+cmb_var.grid_mapping = "mapping"
 cmb_var.standard_name = "land_ice_surface_mass_balance_flux"
 
 time_units = time_var.units
@@ -62,3 +62,4 @@ for t, my_file in enumerate(args):
     nc_in.close()
 
 nc.close()
+print("Done preparing {}".format(infile))

@@ -34,7 +34,7 @@ def generate_domain(domain):
     Returns: string
     '''
     
-    if domain.lower() in ('greenland', 'gris', 'gris_ext'):
+    if domain.lower() in ('langjokull'):
         pism_exec = 'pismr'
     elif domain.lower() in ('jakobshavn'):
         x_min = -280000
@@ -268,17 +268,15 @@ def generate_grid_description(grid_resolution, domain):
     Returns: OrderedDict
     '''
 
-    if domain.lower() in ('greenland_ext', 'gris_ext'):
-        mx_max = 15120
-        my_max = 19680
+    if domain.lower() in ('langjokull'):
+        mx_max = 701
+        my_max = 683
     else:
-        mx_max = 10560
-        my_max = 18240
+        print('domain {} not supported'.format(domain))
 
-
-    resolution_max = 150
+    resolution_max = 100
     
-    accepted_resolutions = (150, 300, 450, 600, 900, 1200, 1500, 1800, 2400, 3000, 3600, 4500, 6000, 9000, 18000, 36000)
+    accepted_resolutions = (100, 200, 400)
 
     try:
         grid_resolution in accepted_resolutions
@@ -295,22 +293,9 @@ def generate_grid_description(grid_resolution, domain):
     horizontal_grid['Mx'] = mx
     horizontal_grid['My'] = my
 
-    if grid_resolution < 1200:
-        skip_max = 200
-        mz = 401
-        mzb = 41
-    elif (grid_resolution >= 1200) and (grid_resolution < 4500):
-        skip_max = 50
-        mz = 201
-        mzb = 21
-    elif (grid_resolution >= 4500) and (grid_resolution < 18000):
-        skip_max = 20
-        mz = 201
-        mzb = 21
-    else:
-        skip_max = 10
-        mz = 101
-        mzb = 11
+    skip_max = 10
+    mz = 201
+    mzb = 11
 
     vertical_grid = OrderedDict()
     vertical_grid['Lz'] = 4000

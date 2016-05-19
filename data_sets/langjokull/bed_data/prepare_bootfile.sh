@@ -13,5 +13,8 @@ for year in 1937 1945 1986 1997 2004; do
     ncatted -a standard_name,usurf,o,c,"surface_altitude" -a units,usurf,o,c,"m" pism_Langjokull_${year}.nc
     ncks -A -v topg pism_Langjokull_bed.nc pism_Langjokull_${year}.nc
     ncap2 -O -s "thk=usurf-topg; where(thk<0) thk=0;" pism_Langjokull_${year}.nc pism_Langjokull_${year}.nc
+    ncatted -a standard_name,thk,o,c,"land_ice_thickness" -a _FillValue,thk,d,, -a _FillValue,usurf,d,, -a _FillValue,topg,d,, pism_Langjokull_${year}.nc
+    ncap2 -O -s "where(thk>1e30) {thk=0; usurf=0;};" pism_Langjokull_${year}.nc pism_Langjokull_${year}.nc
+    
 done
 
