@@ -52,12 +52,16 @@ cdo remapbil,langjokull_g${grid}m.nc climate_iceland_ymean_1997-1-1_2015-1-1.nc 
 ncks -A -v x,y,mapping  langjokull_g${grid}m.nc climate_langjokull_${grid}m_ymean_1997-1-1_2015-1-1.nc
 ncatted -a grid_mapping,ice_surface_temp,o,c,"mapping" climate_langjokull_${grid}m_ymean_1997-1-1_2015-1-1.nc 
 python create_climate_forcing.py -i climate_langjokull_${grid}m_ymean_1997-1-1_2015-1-1.nc smb_g${grid}m_*.nc
+ncatted -a missing_value,ice_surface_temp,d,, -a _FillValue,ice_surface_temp,d,, -a _FillValue,climatic_mass_balance,d,, climate_langjokull_${grid}m_ymean_1997-1-1_2015-1-1.nc
+ncap2 -O -s "where(climatic_mass_balance>1e20) climatic_mass_balance=0.;" climate_langjokull_${grid}m_ymean_1997-1-1_2015-1-1.nc climate_langjokull_${grid}m_ymean_1997-1-1_2015-1-1.nc
 
 # Create time mean
 cdo timmean  climate_langjokull_${grid}m_ymean_1997-1-1_2015-1-1.nc climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
 ncatted -a grid_mapping,ice_surface_temp,o,c,"mapping" -a grid_mapping,climatic_mass_balance,o,c,"mapping" climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
 ncks -A -v x,y,mapping langjokull_g${grid}m.nc climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
 ncks -O -v climatic_mass_balance climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc smb_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
-ncrename -v x_2,x -v y_2,y -d x_2,x -d y_2,y smb_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
-ncks -O -v climatic_mass_balance,x_2,y_2 -x -C climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc  climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
-ncks -A -v climatic_mass_balance smb_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
+ncks -O -v ice_surface_temp climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc t2m_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
+ncrename -d x_2,x -d y_2,y t2m_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
+ncks -O smb_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
+ncks -A -v ice_surface_temp t2m_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc
+ncks -A -v mapping langjokull_g${grid}m.nc climate_langjokull_${grid}m_mean_1997-1-1_2015-1-1.nc

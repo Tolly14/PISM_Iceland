@@ -37,7 +37,7 @@ parser.add_argument("--duration", dest="duration",
                     help="Duration of run", default=10)
 parser.add_argument("-f", "--o_format", dest="oformat",
                     choices=['netcdf3', 'netcdf4_parallel', 'pnetcdf'],
-                    help="output format", default='netcdf4_parallel')
+                    help="output format", default='netcdf3')
 parser.add_argument("-g", "--grid", dest="grid", type=int,
                     choices=grid_choices,
                     help="horizontal grid resolution", default=100)
