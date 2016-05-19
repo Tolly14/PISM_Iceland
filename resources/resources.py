@@ -197,7 +197,7 @@ def generate_spatial_ts(outfile, exvars, step, start=None, end=None, split=None,
     else:
         params_dict['extra_file'] = os.path.join(odir, 'ex_' + outfile)
     params_dict['extra_vars'] = exvars
-    params_dict['extra_split'] = ''
+    # params_dict['extra_split'] = ''
         
     if step is None:
         step = 'yearly'
@@ -368,7 +368,7 @@ def generate_stress_balance(stress_balance, additional_params_dict):
         params_dict['kill_icebergs'] = ''
         params_dict['part_grid'] = ''
         params_dict['part_redist'] = ''
-        params_dict['sia_flow_law'] = 'gpbld3'
+        # params_dict['sia_flow_law'] = 'gpbld3'  ## dev option
         params_dict['pseudo_plastic'] = ''
         params_dict['pseudo_plastic_q'] = additional_params_dict['pseudo_plastic_q']
         params_dict['till_effective_fraction_overburden'] = additional_params_dict['till_effective_fraction_overburden']

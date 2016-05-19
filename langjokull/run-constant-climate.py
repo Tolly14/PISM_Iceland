@@ -23,7 +23,7 @@ parser.add_argument("-n", '--n_procs', dest="n", type=int,
 parser.add_argument("-w", '--wall_time', dest="walltime",
                     help='''walltime. default: 12:00:00.''', default="12:00:00")
 parser.add_argument("-q", '--queue', dest="queue", choices=list_queues(),
-                    help='''queue. default=t1standard.''', default='t1standard')
+                    help='''queue. default=t1standard.''', default='normal')
 parser.add_argument("--climate", dest="climate",
                     choices=['const', 'pdd', 'pdd_lapse', 'flux'],
                     help="Climate", default='const')
@@ -45,10 +45,10 @@ parser.add_argument("--o_dir", dest="odir",
                     help="output directory. Default: current directory", default='.')
 parser.add_argument("--o_size", dest="osize",
                     choices=['small', 'medium', 'big', '2dbig'],
-                    help="output size type", default='2dbig')
+                    help="output size type", default='medium')
 parser.add_argument("-s", "--system", dest="system",
                     choices=list_systems(),
-                    help="computer system to use.", default='pacman')
+                    help="computer system to use.", default='debug')
 parser.add_argument("--stress_balance", dest="stress_balance",
                     choices=['sia', 'ssa+sia', 'ssa'],
                     help="stress balance solver", default='sia')
@@ -74,6 +74,9 @@ domain = options.domain
 pism_exec = generate_domain(domain)
 
 pism_dataname = 'pism_Langjokull_{year}.nc'.format(year=dem_year)
+if not os.path.isdir(odir):
+    os.mkdir(odir)
+
 start = 0
 end = duration
 
@@ -86,7 +89,7 @@ hydrology = 'null'
 ssa_n = (3.25)
 ssa_e = (1.0)
 
-sia_e_values = [3.0]
+sia_e_values = [1.0, 3.0, 5.0]
 ppq_values = [0.60]
 tefo_values = [0.020]
 phi_min_values = [5.0]
