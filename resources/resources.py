@@ -55,24 +55,23 @@ def default_spatial_ts_vars():
     Returns a list of commonly-used extra vars
     '''
     
-    exvars = ['basal_mass_balance_average',
+    exvars = [
               'beta',
               'bmelt',
               'cell_area',
-              'cell_mass',
               'dHdt',
               'diffusivity',
               'discharge_flux',
               'flux_divergence',
-              'height_above_flotation',
+              'h_x',
+              'h_y',
               'mask',
               'lat',
               'lat_bnds',
               'lon',
               'lon_bnds',
               'nuH',
-              'strain_rates',
-              'surface_mass_balance_average',
+              'climatic_mass_balance',
               'taub_mag',
               'tauc',
               'taud_mag',
@@ -87,7 +86,6 @@ def default_spatial_ts_vars():
               'velbase_mag',
               'velsurf',
               'velsurf_mag',
-              'vonmises_stresses',
               'wvelbase',
               'wvelsurf']
     
