@@ -71,6 +71,7 @@ def default_spatial_ts_vars():
               'lon',
               'lon_bnds',
               'nuH',
+              'strain_rates',
               'climatic_mass_balance',
               'taub_mag',
               'tauc',
@@ -350,7 +351,7 @@ def generate_stress_balance(stress_balance, additional_params_dict):
     Returns: OrderedDict
     '''
 
-    accepted_stress_balances = ('sia', 'ssa+sia')
+    accepted_stress_balances = ('sia', 'ssa+sia','ssa)
 
     if stress_balance not in accepted_stress_balances:
         print('{} not in {}'.format(stress_balance, accepted_stress_balances))
@@ -360,7 +361,7 @@ def generate_stress_balance(stress_balance, additional_params_dict):
 
     params_dict = OrderedDict()
     params_dict['stress_balance'] = stress_balance
-    if stress_balance in ('ssa+sia'):
+    if stress_balance in ('ssa+sia', 'ssa'):
         params_dict['sub_pc_type'] = 'lu'
         params_dict['cfbc'] = ''
         params_dict['kill_icebergs'] = ''
