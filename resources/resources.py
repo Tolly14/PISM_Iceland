@@ -351,7 +351,7 @@ def generate_stress_balance(stress_balance, additional_params_dict):
     Returns: OrderedDict
     '''
 
-    accepted_stress_balances = ('sia', 'ssa+sia','ssa')
+    accepted_stress_balances = ('sia', 'ssa+sia', 'ssa')
 
     if stress_balance not in accepted_stress_balances:
         print('{} not in {}'.format(stress_balance, accepted_stress_balances))
@@ -373,8 +373,7 @@ def generate_stress_balance(stress_balance, additional_params_dict):
         params_dict['till_effective_fraction_overburden'] = additional_params_dict['till_effective_fraction_overburden']
         params_dict['topg_to_phi'] = additional_params_dict['topg_to_phi']
         params_dict['tauc_slippery_grounding_lines'] = ''
-
-        return merge_dicts(additional_params_dict, params_dict)
+    return merge_dicts(additional_params_dict, params_dict)
 
 
 def generate_hydrology(hydro, **kwargs):
