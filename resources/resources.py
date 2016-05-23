@@ -351,7 +351,7 @@ def generate_stress_balance(stress_balance, additional_params_dict):
     Returns: OrderedDict
     '''
 
-    accepted_stress_balances = ('sia', 'ssa+sia','ssa)
+    accepted_stress_balances = ('sia', 'ssa+sia','ssa')
 
     if stress_balance not in accepted_stress_balances:
         print('{} not in {}'.format(stress_balance, accepted_stress_balances))
