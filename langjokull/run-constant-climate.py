@@ -86,17 +86,14 @@ hydrology = 'null'
 # set up model initialization
 # ########################################################
 
-ssa_n = (3.25)
+ssa_n = (3.0)
 ssa_e = (1.0)
 
-sia_e_values = [1.0, 3.0, 5.0]
-ppq_values = [0.60]
+sia_e_values = [1.0, 3.0]
+ppq_values = [0.50]
 tefo_values = [0.020]
-phi_min_values = [5.0]
-phi_max_values = [40.]
-topg_min_values = [-700]
-topg_max_values = [700]
-combinations = list(itertools.product(sia_e_values, ppq_values, tefo_values, phi_min_values, phi_max_values, topg_min_values, topg_max_values))
+plastic_phi_values = [20, 30]
+combinations = list(itertools.product(sia_e_values, ppq_values, tefo_values, plastic_phi_values))
 
 tsstep = 'daily'
 exstep = 'monthly'
@@ -106,12 +103,12 @@ scripts = []
 
 for n, combination in enumerate(combinations):
 
-    sia_e, ppq, tefo, phi_min, phi_max, topg_min, topg_max = combination
+    sia_e, ppq, tefo, plastic_phi = combination
 
-    ttphi = '{},{},{},{}'.format(phi_min, phi_max, topg_min, topg_max)
 
     name_options = OrderedDict()
     name_options['sia_e'] = sia_e
+    name_options['plastic_phi'] = plastic_phi
     name_options['dem'] = dem_year
     experiment =  '_'.join([climate, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
 
@@ -156,7 +153,7 @@ for n, combination in enumerate(combinations):
         sb_params_dict['ssa_n'] = ssa_n
         sb_params_dict['pseudo_plastic_q'] = ppq
         sb_params_dict['till_effective_fraction_overburden'] = tefo
-        sb_params_dict['topg_to_phi'] = ttphi
+        sb_params_dict['plastic_phi'] = plastic_phi
         sb_params_dict['bed_smoother_range'] = 0.
 
         stress_balance_params_dict = generate_stress_balance(stress_balance, sb_params_dict)
