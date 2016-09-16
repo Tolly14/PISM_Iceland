@@ -518,6 +518,7 @@ def list_queues():
             'long',
             'medium',
             'normal',
+            'short',
             'standard',
             'standard_16',
             't1standard',
