@@ -496,6 +496,7 @@ def list_systems():
     list = ['debug',
             'chinook',
             'fish',
+            'garpur',
             'pacman',
             'pleiades',
             'pleiades_ivy',
@@ -513,12 +514,15 @@ def list_queues():
     list = ['debug',
             'gpu',
             'gpu_long',
-            'normal',
+            'highmem',
             'long',
+            'medium',
+            'normal',
             'standard',
             'standard_16',
             't1standard',
-            't1small']
+            't1small',
+            'verylong']
     
     return list
 
@@ -601,7 +605,18 @@ def make_batch_header(system, cores, walltime, queue):
                            'job_id' : 'PBS_JOBID',
                            'queue' : {
                                'long' : 28,
-                               'normal': 28}}
+                               'normal' : 28}}
+    mpido = 'mpirun -np {cores}'.format(cores=cores)
+    systems['garpur'] = {'mpido' : mpido,
+                         'submit' : 'qsub',
+                         'work_dir' : 'PBS_O_WORKDIR',
+                         'job_id' : 'PBS_JOBID',
+                         'queue' : {
+                             'short' : 24,
+                             'medium' : 24,
+                             'long' : 24,
+                             'verylong' : 24,
+                             'highmem' : 32}}
 
     assert system in systems.keys()
     if system not in 'debug':
