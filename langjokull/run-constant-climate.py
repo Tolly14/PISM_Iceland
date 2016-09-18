@@ -96,7 +96,7 @@ plastic_phi_values = [20, 30]
 combinations = list(itertools.product(sia_e_values, ppq_values, tefo_values, plastic_phi_values))
 
 tsstep = 'daily'
-exstep = 'yealy'
+exstep = 'yearly'
 
 scripts = []
 
