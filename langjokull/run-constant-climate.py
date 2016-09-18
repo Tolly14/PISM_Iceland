@@ -19,7 +19,7 @@ grid_choices = [400, 200, 100]
 parser = ArgumentParser()
 parser.description = "Generating scripts for prognostic simulations."
 parser.add_argument("-n", '--n_procs', dest="n", type=int,
-                    help='''number of cores/processors. default=2.''', default=2)
+                    help='''number of cores/processors. default=2.''', default=24)
 parser.add_argument("-w", '--wall_time', dest="walltime",
                     help='''walltime. default: 12:00:00.''', default="12:00:00")
 parser.add_argument("-q", '--queue', dest="queue", choices=list_queues(),
@@ -31,7 +31,7 @@ parser.add_argument("-d", "--domain", dest="domain",
                     choices=['langjokull'],
                     help="sets the modeling domain", default='langjokull')
 parser.add_argument("--dem_year", dest="dem_year",
-                    choices=[1937, 1945, 1986, 1997, 2004],
+                    choices=['1937', '1945', '1986', '1997', '2004'],
                     help="Year of surface DEM", default=2004)
 parser.add_argument("--duration", dest="duration",
                     help="Duration of run", default=10)
@@ -92,7 +92,7 @@ ssa_e = (1.0)
 sia_e_values = [1.0, 3.0]
 ppq_values = [0.50]
 tefo_values = [0.020]
-plastic_phi_values = [20, 30]
+plastic_phi_values = [20, 30, 40]
 combinations = list(itertools.product(sia_e_values, ppq_values, tefo_values, plastic_phi_values))
 
 tsstep = 'daily'
