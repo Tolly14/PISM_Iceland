@@ -718,4 +718,6 @@ module list
 cd $PBS_O_WORKDIR
 
 """
+    else:
+        header = "\n"
         return header
