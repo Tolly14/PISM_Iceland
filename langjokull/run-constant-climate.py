@@ -113,9 +113,11 @@ for n, combination in enumerate(combinations):
     name_options['dem'] = dem_year
     experiment =  '_'.join([climate, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
 
-    full_exp_name =  '_'.join([climate, vversion, bed_type, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
-    full_outfile = '{domain}_g{grid}m_{experiment}.nc'.format(domain=domain.lower(),grid=grid, experiment=full_exp_name)
-
+    # full_exp_name =  '_'.join([climate, vversion, bed_type, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
+    # full_outfile = '{domain}_g{grid}m_{experiment}.nc'.format(domain=domain.lower(),grid=grid, experiment=full_exp_name)
+    full_outfile = ''
+    full_exp_name = ''
+    
     outfiles = []
         
     script = 'cc_{}_g{}m_{}.sh'.format(domain.lower(), grid, experiment)
