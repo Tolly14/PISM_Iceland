@@ -119,7 +119,7 @@ for n, combination in enumerate(combinations):
     full_exp_name = ''
     
     outfiles = []
-        
+
     script = 'cc_{}_g{}m_{}.sh'.format(domain.lower(), grid, experiment)
     scripts.append(script)
     
@@ -183,24 +183,19 @@ for n, combination in enumerate(combinations):
         f.write('\n')
 
 
-    script_post = 'init_{}_g{}m_{}_post.sh'.format(domain.lower(), grid, full_exp_name)
+    script_post = 'cc_{}_g{}m_{}_post.sh'.format(domain.lower(), grid, experiment)
     scripts_post.append(script_post)
 
     post_header = make_batch_post_header(system)
     
-    # with open(script_post, 'w') as f:
+    with open(script_post, 'w') as f:
 
-    #     f.write(post_header)
-
-    #     extra_file = spatial_ts_dict['extra_file']
-    #     myfiles = ' '.join(['{}_{}.000.nc'.format(extra_file, k) for k in range(paleo_start_year+exstep, paleo_end_year, exstep)])
-    #     myoutfile = extra_file + '.nc'
-    #     myoutfile = os.path.join(odir, os.path.split(myoutfile)[-1])
-    #     cmd = ' '.join(['ncrcat -O -4 -L 3', myfiles, myoutfile, '\n'])
-    #     f.write(cmd)
-    #     for myfile in outfiles:
-    #         cmd = ' '.join(['ncks -O -4 -L 3', os.path.join(odir, myfile), os.path.join(odir, myfile), '\n'])
-    #         f.write(cmd)
+        f.write(post_header)
+        cmd = ' '.join(['ncpdq -O -4 -L 3 -a time,y,x,z', outfile, outfile, '\n'])
+        f.write(cmd)
+        extra_file = spatial_ts_dict['extra_file']
+        cmd = ' '.join(['ncpdq -O -4 -L 3 -a time,y,x,z', extra_file, extra_file, '\n'])
+        f.write(cmd)
 
 
 scripts = uniquify_list(scripts)
