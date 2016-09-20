@@ -113,7 +113,7 @@ for n, combination in enumerate(combinations):
     name_options['dem'] = dem_year
     experiment =  '_'.join([climate, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
 
-    # full_exp_name =  '_'.join([climate, vversion, bed_type, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
+      # full_exp_name =  '_'.join([climate, vversion, bed_type, '_'.join(['_'.join([k, str(v)]) for k, v in name_options.items()])])
     # full_outfile = '{domain}_g{grid}m_{experiment}.nc'.format(domain=domain.lower(),grid=grid, experiment=full_exp_name)
     full_outfile = ''
     full_exp_name = ''
@@ -166,7 +166,8 @@ for n, combination in enumerate(combinations):
         stress_balance_params_dict = generate_stress_balance(stress_balance, sb_params_dict)
         surface_file = 'climate_langjokull_100m_mean_1997-1-1_2015-1-1.nc'
         climate_params_dict = generate_climate(climate,
-                                                   surface_given_file=surface_file)
+                                                   surface_given_file=surface_file,
+                                               force_to_thickness_file=pism_dataname)
         ocean_params_dict = generate_ocean('const')
         hydro_params_dict = generate_hydrology(hydrology)
 
