@@ -719,5 +719,14 @@ cd $PBS_O_WORKDIR
 
 """
     else:
-        header = "\n"
+        header = """#!/bin/bash
+#PBS -q medium
+#PBS -l walltime=12:00:
+#PBS -l nodes=1:ppn=1
+#PBS -j oe
+
+module list
+
+cd $PBS_O_WORKDIR
+"""
         return header
