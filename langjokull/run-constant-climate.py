@@ -99,6 +99,7 @@ tsstep = 'daily'
 exstep = 'yearly'
 
 scripts = []
+scripts_post = []
 
 
 for n, combination in enumerate(combinations):
@@ -175,8 +176,33 @@ for n, combination in enumerate(combinations):
         f.write(cmd)
         f.write('\n')
 
+
+    script_post = 'init_{}_g{}m_{}_post.sh'.format(domain.lower(), grid, full_exp_name)
+    scripts_post.append(script_post)
+
+    post_header = make_batch_post_header(system)
     
+    with open(script_post, 'w') as f:
+
+        f.write(post_header)
+
+        extra_file = spatial_ts_dict['extra_file']
+        myfiles = ' '.join(['{}_{}.000.nc'.format(extra_file, k) for k in range(paleo_start_year+exstep, paleo_end_year, exstep)])
+        myoutfile = extra_file + '.nc'
+        myoutfile = os.path.join(odir, os.path.split(myoutfile)[-1])
+        cmd = ' '.join(['ncrcat -O -4 -L 3', myfiles, myoutfile, '\n'])
+        f.write(cmd)
+        for myfile in outfiles:
+            cmd = ' '.join(['ncks -O -4 -L 3', os.path.join(odir, myfile), os.path.join(odir, myfile), '\n'])
+            f.write(cmd)
+
+
 scripts = uniquify_list(scripts)
+scripts_post = uniquify_list(scripts_post)
+print '\n'.join([script for script in scripts])
+print('\nwritten\n')
+print '\n'.join([script for script in scripts_post])
+print('\nwritten\n')
 
 submit = 'submit_{domain}_g{grid}m_{climate}.sh'.format(domain=domain.lower(), grid=grid, climate=climate)
 try:
@@ -189,6 +215,3 @@ with open(submit, 'w') as f:
     f.write('#!/bin/bash\n')
     for k in range(len(scripts)):
         f.write('JOBID=$({batch_submit} {script})\n'.format(batch_submit=batch_system['submit'], script=scripts[k]))
-
-print("\nRun {} to submit all jobs to the scheduler\n".format(submit))
-
