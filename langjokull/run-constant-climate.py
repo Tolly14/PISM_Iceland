@@ -188,19 +188,19 @@ for n, combination in enumerate(combinations):
 
     post_header = make_batch_post_header(system)
     
-    with open(script_post, 'w') as f:
+    # with open(script_post, 'w') as f:
 
-        f.write(post_header)
+    #     f.write(post_header)
 
-        extra_file = spatial_ts_dict['extra_file']
-        myfiles = ' '.join(['{}_{}.000.nc'.format(extra_file, k) for k in range(paleo_start_year+exstep, paleo_end_year, exstep)])
-        myoutfile = extra_file + '.nc'
-        myoutfile = os.path.join(odir, os.path.split(myoutfile)[-1])
-        cmd = ' '.join(['ncrcat -O -4 -L 3', myfiles, myoutfile, '\n'])
-        f.write(cmd)
-        for myfile in outfiles:
-            cmd = ' '.join(['ncks -O -4 -L 3', os.path.join(odir, myfile), os.path.join(odir, myfile), '\n'])
-            f.write(cmd)
+    #     extra_file = spatial_ts_dict['extra_file']
+    #     myfiles = ' '.join(['{}_{}.000.nc'.format(extra_file, k) for k in range(paleo_start_year+exstep, paleo_end_year, exstep)])
+    #     myoutfile = extra_file + '.nc'
+    #     myoutfile = os.path.join(odir, os.path.split(myoutfile)[-1])
+    #     cmd = ' '.join(['ncrcat -O -4 -L 3', myfiles, myoutfile, '\n'])
+    #     f.write(cmd)
+    #     for myfile in outfiles:
+    #         cmd = ' '.join(['ncks -O -4 -L 3', os.path.join(odir, myfile), os.path.join(odir, myfile), '\n'])
+    #         f.write(cmd)
 
 
 scripts = uniquify_list(scripts)
