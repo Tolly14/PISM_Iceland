@@ -4,321 +4,229 @@ resources
 
 Provides:
   - general resources such as grid constructors, calving, hydrology, etc.
-    for the Greenland Ice Sheet (and sub-regions thereof
+    for the Greenland Ice Sheet and sub-regions thereof
 
 """
 
 from collections import OrderedDict
 import os
+import math
+import sys
+import os.path
 
 
 def generate_prefix_str(pism_exec):
-    '''
+    """
     Generate prefix string.
 
     Returns: string
-    '''
+    """
 
-    try:
-        p = os.environ['PISM_PREFIX']  + pism_exec
-    except:
-        p  = pism_exec
-    
-    return p
+    return os.path.join(os.environ.get("PISM_PREFIX", ""), pism_exec)
 
 
 def generate_domain(domain):
-    '''
+    """
     Generate domain specific options
 
     Returns: string
-    '''
-    
-    if domain.lower() in ('langjokull'):
-        pism_exec = 'pismr'
-    elif domain.lower() in ('jakobshavn'):
-        x_min = -280000
-        x_max = 320000
-        y_min = -2410000
-        y_max = -2020000
-        pism_exec = '''pismo -x_range {x_min},{x_max} -y_range {y_min},{y_max} -bootstrap'''.format(x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max)
-    else:
-        print('Domain {} not recognized, exiting'.format(domain))
-        import sys
-        sys.exit(0)
+    """
 
+    if domain.lower() in ("iceland"):
+        pism_exec = "pismr"
+    else:
+        print(("Domain {} not recognized, exiting".format(domain)))
+        import sys
+
+        sys.exit(0)
     return pism_exec
 
 
-def default_spatial_ts_vars():
-    '''
-    Returns a list of commonly-used extra vars
-    '''
-    
-    exvars = [
-              'beta',
-              'bmelt',
-              'cell_area',
-              'dHdt',
-              'diffusivity',
-              'discharge_flux',
-              'flux_divergence',
-              'h_x',
-              'h_y',
-              'mask',
-              'lat',
-              'lat_bnds',
-              'lon',
-              'lon_bnds',
-              'nuH',
-              'strain_rates',
-              'climatic_mass_balance',
-              'taub_mag',
-              'tauc',
-              'taud_mag',
-              'tempicethk_basal',
-              'temppabase',
-              'tempsurf',
-              'thk',
-              'topg',
-              'usurf',
-              'velbar',
-              'velbase',
-              'velbase_mag',
-              'velsurf',
-              'velsurf_mag',
-              'wvelbase',
-              'wvelsurf']
-    
-    return exvars
+spatial_ts_vars = {}
 
-def ismip6_spatial_ts_vars():
-    '''
-    Returns a list of commonly-used extra vars
-    '''
-    
-    exvars = ['basal_mass_balance_average',
-              'beta',
-              'bmelt',
-              'cell_area',
-              'dbdt',
-              'dHdt',
-              'diffusivity',
-              'discharge_flux',
-              'flux_divergence',
-              'height_above_flotation',
-              'hfgeoubed',
-              'mask',
-              'lat',
-              'lat_bnds',
-              'lon',
-              'lon_bnds',
-              'nuH',
-              'relative_flotation',
-              'sftgrf',
-              'sftflf',
-              'sftgif',
-              'surface_mass_balance_average',
-              'taub_mag',
-              'tauc',
-              'taud_mag',
-              'tempicethk_basal',
-              'tempbase',
-              'temppabase',
-              'tempsurf',
-              'thk',
-              'topg',
-              'usurf',
-              'velbar',
-              'velbase',
-              'velbase_mag',
-              'velsurf',
-              'velsurf_mag',
-              'wvelbase',
-              'wvelsurf']
-    
-    return exvars
+spatial_ts_vars["basic"] = [
+    "bwat",
+    "dHdt",
+    "climatic_mass_balance",
+    "diffusivity",
+    "ice_mass",
+    "ice_surface_temp",
+    "mask",
+    "mass_fluxes",
+    "sftgif",
+    "thk",
+    "topg",
+    "usurf",
+    "velbase_mag",
+    "velsurf_mag",
+]
 
-def init_spatial_ts_vars():
-    '''
-    Returns a list of commonly-used extra vars for initialization
-    '''
-    
-    exvars = ['basal_mass_balance_average',
-              'beta',
-              'bmelt',
-              'cell_area',
-              'dbdt',
-              'dHdt',
-              'diffusivity',
-              'discharge_flux',
-              'height_above_flotation',
-              'mask',
-              'lat',
-              'lat_bnds',
-              'lon',
-              'lon_bnds',
-              'nuH',
-              'surface_mass_balance_average',
-              'taub_mag',
-              'tauc',
-              'taud_mag',
-              'tempicethk_basal',
-              'temppabase',
-              'tempsurf',
-              'thk',
-              'topg',
-              'usurf',
-              'velbase',
-              'velbase_mag',
-              'velsurf',
-              'velsurf_mag']
-    
-    return exvars
+spatial_ts_vars["pdd"] = [
+    "bwat",
+    "dHdt",
+    "climatic_mass_balance",
+    "diffusivity",
+    "ice_mass",
+    "ice_surface_temp",
+    "mask",
+    "mass_fluxes",
+    "sftgif",
+    "surface_accumulation_flux",
+    "surface_accumulation_rate",
+    "surface_melt_flux",
+    "surface_melt_rate",
+    "surface_runoff_flux",
+    "surface_runoff_rate",
+    "thk",
+    "topg",
+    "usurf",
+    "velbase_mag",
+    "velsurf_mag",
+]
 
 
 def generate_spatial_ts(outfile, exvars, step, start=None, end=None, split=None, odir=None):
-    '''
+    """
     Return dict to generate spatial time series
 
     Returns: OrderedDict
-    '''
+    """
 
     # check if list or comma-separated string is given.
     try:
-        exvars = ','.join(exvars)
+        exvars = ",".join(exvars)
     except:
         pass
-    
-    params_dict = OrderedDict()
-    if odir is None:
-        params_dict['extra_file'] = 'ex_' + outfile
-    else:
-        params_dict['extra_file'] = os.path.join(odir, 'ex_' + outfile)
-    params_dict['extra_vars'] = exvars
-    # params_dict['extra_split'] = ''
-        
-    if step is None:
-        step = 'yearly'
 
-    if (start is not None and end is not None):
-        times = '{start}:{step}:{end}'.format(start=start, step=step, end=end)
+    params_dict = OrderedDict()
+    if split is True:
+        outfile, ext = os.path.splitext(outfile)
+        params_dict["extra_split"] = ""
+    if odir is None:
+        params_dict["extra_file"] = "ex_" + outfile
+    else:
+        params_dict["extra_file"] = os.path.join(odir, "ex_" + outfile)
+    params_dict["extra_vars"] = exvars
+
+    if step is None:
+        step = "yearly"
+
+    if start is not None and end is not None:
+        times = "{start}:{step}:{end}".format(start=start, step=step, end=end)
     else:
         times = step
-        
-    params_dict['extra_times'] = times
-        
-    if split:
-        params_dict['extra_split'] = ''
+
+    params_dict["extra_times"] = times
 
     return params_dict
 
 
-def generate_scalar_ts(outfile, step, start=None, end=None, odir=None):
-    '''
+def generate_scalar_ts(outfile, step, odir=None, **kwargs):
+    """
     Return dict to create scalar time series
 
     Returns: OrderedDict
-    '''
+    """
 
     params_dict = OrderedDict()
     if odir is None:
-        params_dict['ts_file'] = 'ts_' + outfile
+        params_dict["ts_file"] = "ts_" + outfile
     else:
-        params_dict['ts_file'] = os.path.join(odir, 'ts_' + outfile)
-    
-    if step is None:
-        step = 'yearly'
+        params_dict["ts_file"] = os.path.join(odir, "ts_" + outfile)
 
-    if (start is not None and end is not None):
-        times = '{start}:{step}:{end}'.format(start=start, step=step, end=end)
+    if step is None:
+        step = "yearly"
     else:
         times = step
-    params_dict['ts_times'] = times
+    params_dict["ts_times"] = times
 
     return params_dict
 
 
 def generate_snap_shots(outfile, times, odir=None):
-    '''
+    """
     Return dict to generate snap shots
 
     Returns: OrderedDict
-    '''
-    
+    """
+
     params_dict = OrderedDict()
     if odir is None:
-        params_dict['save_file'] = 'save_' + outfile.split('.nc')[0]
+        params_dict["save_file"] = "save_" + outfile.split(".nc")[0]
     else:
-        params_dict['save_file'] = os.path.join(odir, 'save_' + outfile.split('.nc')[0])
+        params_dict["save_file"] = os.path.join(odir, "save_" + outfile.split(".nc")[0])
 
-    params_dict['save_file'] = 'save_' + outfile.split('.nc')[0]
-    params_dict['save_times'] = ','.join(str(e) for e in times)
-    params_dict['save_split'] = ''
-    params_dict['save_force_output_times'] = ''
+    params_dict["save_times"] = ",".join(str(e) for e in times)
+    params_dict["save_split"] = ""
+    params_dict["save_force_output_times"] = ""
 
     return params_dict
 
 
-def generate_grid_description(grid_resolution, domain):
-    '''
+def generate_grid_description(grid_resolution, domain, restart=False):
+    """
     Generate grid description dict
 
     Returns: OrderedDict
-    '''
+    """
 
-    if domain.lower() in ('langjokull'):
-        mx_max = 701
-        my_max = 683
+    if domain.lower() in ("iceland"):
+
+        mx_max = 1201
+        my_max = 801
+
     else:
-        print('domain {} not supported'.format(domain))
+        print("how did I get here")
 
-    resolution_max = 100
-    
-    accepted_resolutions = (100, 200, 400)
+    resolution_max = 500
+
+    accepted_resolutions = (500, 1000)
 
     try:
         grid_resolution in accepted_resolutions
         pass
     except:
-        print('grid resolution {}m not recognized'.format(grid_resolution))
+        print(("grid resolution {}m not recognized".format(grid_resolution)))
 
-    grid_div = (grid_resolution / resolution_max)
-              
-    mx = mx_max / grid_div
-    my = my_max / grid_div
+    skip_max = 200
+    mz = 401
+    mzb = 21
+
+    grid_div = grid_resolution / resolution_max
+
+    mx = int(mx_max / grid_div)
+    my = int(my_max / grid_div)
 
     horizontal_grid = OrderedDict()
-    horizontal_grid['Mx'] = mx
-    horizontal_grid['My'] = my
-
-    skip_max = 100
-    mz = 201
-    mzb = 11
+    horizontal_grid["Mx"] = mx
+    horizontal_grid["My"] = my
 
     vertical_grid = OrderedDict()
-    vertical_grid['Lz'] = 4000
-    vertical_grid['Lbz'] = 2000
-    vertical_grid['z_spacing'] = 'equal'
-    vertical_grid['Mz'] = mz
-    vertical_grid['Mbz'] = mzb
+    vertical_grid["Lz"] = 4000
+    vertical_grid["Lbz"] = 2000
+    vertical_grid["z_spacing"] = "equal"
+    vertical_grid["Mz"] = mz
+    vertical_grid["Mbz"] = mzb
 
     grid_options = {}
-    grid_options['skip'] = ''
-    grid_options['skip_max'] = skip_max
+    grid_options["skip"] = ""
+    grid_options["skip_max"] = skip_max
 
-    grid_dict = merge_dicts( horizontal_grid, vertical_grid, grid_options)
+    grid_dict = merge_dicts(horizontal_grid, vertical_grid, grid_options)
 
-    return grid_dict
+    if restart is True:
+        return grid_options
+    else:
+        return grid_dict
 
 
 def merge_dicts(*dict_args):
-    '''
+    """
     Given any number of dicts, shallow copy and merge into a new dict,
     precedence goes to key value pairs in latter dicts.
 
     Returns: OrderedDict
-    '''
+    """
     result = OrderedDict()
     for dictionary in dict_args:
         result.update(dictionary)
@@ -326,13 +234,16 @@ def merge_dicts(*dict_args):
 
 
 def uniquify_list(seq, idfun=None):
-    '''
+    """
     Remove duplicates from a list, order preserving.
     From http://www.peterbe.com/plog/uniqifiers-benchmark
-    '''
+    """
 
     if idfun is None:
-        def idfun(x): return x
+
+        def idfun(x):
+            return x
+
     seen = {}
     result = []
     for item in seq:
@@ -345,304 +256,265 @@ def uniquify_list(seq, idfun=None):
 
 
 def generate_stress_balance(stress_balance, additional_params_dict):
-    '''
+    """
     Generate stress balance params
 
     Returns: OrderedDict
-    '''
+    """
 
-    accepted_stress_balances = ('sia', 'ssa+sia', 'ssa')
+    accepted_stress_balances = ("sia", "ssa+sia")
 
     if stress_balance not in accepted_stress_balances:
-        print('{} not in {}'.format(stress_balance, accepted_stress_balances))
-        print('available stress balance solvers are {}'.format(accepted_stress_balances))
+        print(("{} not in {}".format(stress_balance, accepted_stress_balances)))
+        print(("available stress balance solvers are {}".format(accepted_stress_balances)))
         import sys
+
         sys.exit(0)
 
     params_dict = OrderedDict()
-    params_dict['stress_balance'] = stress_balance
-    if stress_balance in ('ssa+sia', 'ssa'):
-        params_dict['sub_pc_type'] = 'lu'
-        params_dict['cfbc'] = ''
-        params_dict['kill_icebergs'] = ''
-        params_dict['part_grid'] = ''
-        params_dict['part_redist'] = ''
-        # params_dict['sia_flow_law'] = 'gpbld3'  ## dev option
-        params_dict['pseudo_plastic'] = ''
-        params_dict['pseudo_plastic_q'] = additional_params_dict['pseudo_plastic_q']
-        params_dict['till_effective_fraction_overburden'] = additional_params_dict['till_effective_fraction_overburden']
-        params_dict['plastic_phi'] = additional_params_dict['plastic_phi']
+    params_dict["stress_balance"] = stress_balance
+    if stress_balance in ("ssa+sia"):
+        params_dict["options_left"] = ""
+        params_dict["cfbc"] = ""
+        params_dict["kill_icebergs"] = ""
+        params_dict["part_grid"] = ""
+        params_dict["part_redist"] = ""
+        params_dict["sia_flow_law"] = "gpbld"
+        params_dict["pseudo_plastic"] = ""
+        params_dict["tauc_slippery_grounding_lines"] = ""
+
     return merge_dicts(additional_params_dict, params_dict)
 
 
 def generate_hydrology(hydro, **kwargs):
-    '''
+    """
     Generate hydrology params
 
     Returns: OrderedDict
-    '''
-    
+    """
+
     params_dict = OrderedDict()
-    if hydro in ('null'):
-        params_dict['hydrology'] = 'null'
-    elif hydro in ('diffuse'):
-        params_dict['hydrology'] = 'null'
-        params_dict['hydrology_null_diffuse_till_water'] = ''
+    if hydro in ("null"):
+        params_dict["hydrology"] = "null"
+    elif hydro in ("diffuse"):
+        params_dict["hydrology"] = "null"
+        params_dict["hydrology_null_diffuse_till_water"] = ""
+    elif hydro in ("routing"):
+        params_dict["hydrology"] = "routing"
+    elif hydro in ("routing_coupled"):
+        params_dict["hydrology"] = "routing"
+    elif hydro in ("distributed"):
+        params_dict["hydrology"] = "distributed"
+        params_dict["basal_yield_stress.add_transportable_water"] = "true"
+    elif hydro in ("distributed_coupled"):
+        params_dict["hydrology"] = "distributed"
+        params_dict["basal_yield_stress.add_transportable_water"] = "true"
     else:
-        print('hydrology {} not recognized, exiting'.format(hydro))
+        print(("hydrology {} not recognized, exiting".format(hydro)))
         import sys
+
         sys.exit(0)
 
     return merge_dicts(params_dict, kwargs)
 
 
 def generate_calving(calving, **kwargs):
-    '''
+    """
     Generate calving params
 
     Returns: OrderedDict
-    '''
+    """
 
     params_dict = OrderedDict()
-    if calving in ('ocean_kill',
-                   'thickness_calving',
-                   'stress_calving'):
-        params_dict['calving'] = calving
-    elif calving in ('eigen_calving'):
-        params_dict['calving'] = '{},thickness_calving'.format(calving)
-    elif calving in ('float_kill'):
-        params_dict['calving'] = calving
-        params_dict['float_kill_margin_only'] = ''
+    if calving in ("thickness_calving", "hayhurst_calving"):
+        params_dict["calving"] = calving
+    elif calving in ("eigen_calving", "vonmises_calving"):
+        params_dict["calving"] = "{},thickness_calving".format(calving)
+    elif calving in ("hybrid_calving"):
+        params_dict["calving"] = "eigen_calving,vonmises_calving,thickness_calving"
+    elif calving in ("float_kill", "float_kill,ocean_kill", "vonmises_calving,ocean_kill", "eigen_calving,ocean_kill"):
+        params_dict["calving"] = calving
     else:
-        print('calving {} not recognized, exiting'.format(calving))
+        print(("calving {} not recognized, exiting".format(calving)))
         import sys
-        sys.exit(0)
 
+        sys.exit(0)
+    if "frontal_melt" in kwargs and kwargs["frontal_melt"] is True:
+        params_dict["calving"] += ",frontal_melt"
+        # need to delete the entry
+        del kwargs["frontal_melt"]
     return merge_dicts(params_dict, kwargs)
 
 
 def generate_climate(climate, **kwargs):
-    '''
+    """
     Generate climate params
 
     Returns: OrderedDict
-    '''
-    
+    """
+
     params_dict = OrderedDict()
-    if climate in ('paleo'):
-        params_dict['atmosphere'] = 'searise_greenland,delta_T,paleo_precip'
-        if 'atmosphere_paleo_precip_file' not in kwargs:
-            params_dict['atmosphere_paleo_precip_file'] = 'pism_dT.nc'
-        if 'atmosphere_delta_T_file' not in kwargs:
-            params_dict['atmosphere_delta_T_file'] = 'pism_dT.nc'
-        params_dict['surface'] = 'pdd'
-    elif climate in ('pdd'):
-        params_dict['atmosphere'] = 'given'
-        if 'atmosphere_given_file' not in kwargs:
-            params_dict['atmosphere_given_file'] = 'foo.nc'
-        params_dict['surface'] = 'pdd'
-    elif climate in ('pdd_lapse'):
-        params_dict['atmosphere'] = 'given,lapse_rate'
-        if 'atmosphere_given_file' not in kwargs:
-            params_dict['atmosphere_given_file'] = 'foo.nc'
-        if 'temp_lapse_rate' not in kwargs:
-            params_dict['temp_lapse_rate'] = 0.0
-        params_dict['surface'] = 'pdd'
-    elif climate in ('const', 'relax', 'given'):
-        params_dict['surface'] = 'given'
-    elif climate in ('flux'):
-        params_dict['surface'] = 'given,forcing'
+    if climate in ("elevation"):
+        params_dict["surface"] = "elevation"
+        params_dict["ice_surface_temp"] = "0,-15,-100,5000"
+        params_dict["climatic_mass_balance"] = "-6.,2.5,0,1000,2500"
+    elif climate in ("present"):
+        params_dict["atmosphere"] = "given,lapse_rate"
+        params_dict["surface.pdd.factor_ice"] = 10.5 / 910  # Ziemen et al (2016)
+        params_dict["surface.pdd.factor_snow"] = 4.0 / 910  # Ziemen et al (2016)
+        params_dict["surface.pdd.std_dev"] = 4.23
+        if "atmosphere_given_file" not in kwargs:
+            params_dict[
+                "atmosphere_given_file"
+            ] = "../data_sets/climate_forcing/climate_cru_TS31_historical_1910_2009.nc"
+        else:
+            params_dict["atmosphere_given_file"] = kwargs["../data_sets/climate_forcing/atmosphere_given_file"]
+        if "temp_lapse_rate" not in kwargs:
+            params_dict["temp_lapse_rate"] = 6
+        else:
+            params_dict["temp_lapse_rate"] = kwargs["temp_lapse_rate"]
+        if "atmosphere_lapse_rate_file" not in kwargs:
+            params_dict[
+                "atmosphere_lapse_rate_file"
+            ] = "../data_sets/climate_forcing/climate_cru_TS31_historical_1910_2009.nc"
+        else:
+            params_dict["atmosphere_lapse_rate_file"] = kwargs["atmosphere_lapse_rate_file"]
+        params_dict["surface"] = "pdd"
+    elif climate in ("paleo"):
+        params_dict["atmosphere"] = "given,lapse_rate,delta_T,paleo_precip"
+        params_dict["surface.pdd.factor_ice"] = 10.5 / 910  # Ziemen et al (2016)
+        params_dict["surface.pdd.factor_snow"] = 4.0 / 910  # Ziemen et al (2016)
+        params_dict["surface.pdd.std_dev"] = 4.23
+        if "atmosphere_given_file" not in kwargs:
+            params_dict[
+                "atmosphere_given_file"
+            ] = "../data_sets/climate_forcing/climate_cru_TS31_historical_1910_2009.nc"
+        else:
+            params_dict["atmosphere_given_file"] = kwargs["atmosphere_given_file"]
+        if "temp_lapse_rate" not in kwargs:
+            params_dict["temp_lapse_rate"] = 6
+        else:
+            params_dict["temp_lapse_rate"] = kwargs["temp_lapse_rate"]
+        if "atmosphere_lapse_rate_file" not in kwargs:
+            params_dict[
+                "atmosphere_lapse_rate_file"
+            ] = "../data_sets/climate_forcing/climate_cru_TS31_historical_1910_2009.nc"
+        else:
+            params_dict["atmosphere_lapse_rate_file"] = kwargs["atmosphere_lapse_rate_file"]
+        if "atmosphere_delta_T_file" not in kwargs:
+            params_dict["atmosphere_delta_T_file"] = "../data_sets/climate_forcing/arctic_paleo_modifier.nc"
+        else:
+            params_dict["atmosphere_delta_T_file"] = kwargs["atmosphere_delta_T_file"]
+        if "atmosphere_paleo_precip_file" not in kwargs:
+            params_dict["atmosphere_paleo_precip_file"] = "../data_sets/climate_forcing/arctic_paleo_modifier.nc"
+        else:
+            params_dict["atmosphere_paleo_precip_file"] = kwargs["atmosphere_paleo_precip_file"]
+        params_dict["surface"] = "pdd"
     else:
-        print('climate {} not recognized, exiting'.format(climate))
+        print(("climate {} not recognized, exiting".format(climate)))
         import sys
+
         sys.exit(0)
-        
+
     return merge_dicts(params_dict, kwargs)
 
-        
+
 def generate_ocean(ocean, **kwargs):
-    '''
+    """
     Generate ocean params
 
     Returns: OrderedDict
-    '''
+    """
 
     params_dict = OrderedDict()
-    if ocean in ('paleo'):
-        params_dict['ocean'] = 'given,delta_SL'
-        if 'ocean_delta_SL_file' not in kwargs:
-            params_dict['ocean_delta_SL_file'] = 'pism_dSL.nc'
-            params_dict['ocean_given_file'] = kwargs['ocean_given_file']
-    elif ocean in ('given', 'relax'):
-        params_dict['ocean'] = 'given'
-    elif ocean in ('given_mbp'):
-        params_dict['ocean'] = 'given,delta_MBP'
-    elif ocean in ('const'):
-        params_dict['ocean'] = 'constant'
+    if ocean == "const":
+        params_dict["ocean"] = "constant"
     else:
-        print('ocean {} not recognized, exiting'.format(ocean))
+        print(("ocean {} not recognized, exiting".format(ocean)))
         import sys
+
         sys.exit(0)
 
     return merge_dicts(params_dict, kwargs)
 
 
 def list_systems():
-
-    '''
+    """
     Return a list of supported systems.
-    '''
-    
-    list = ['debug',
-            'chinook',
-            'fish',
-            'garpur',
-            'pacman',
-            'pleiades',
-            'pleiades_ivy',
-            'pleiades_broadwell']
-    
-    return list
+    """
+    return sorted(systems.keys())
 
 
 def list_queues():
-
-    '''
+    """
     Return a list of supported queues.
-    '''
-    
-    list = ['debug',
-            'gpu',
-            'gpu_long',
-            'highmem',
-            'long',
-            'medium',
-            'normal',
-            'short',
-            'standard',
-            'standard_16',
-            't1standard',
-            't1small',
-            't2standard',
-            't2small',
-            'verylong']
-    
-    return list
+    """
+    result = set()
+    for s in list(systems.values()):
+        for q in list(s["queue"].keys()):
+            result.add(q)
+
+    return result
 
 
+# information about systems
+systems = {}
 
-def list_bed_types():
+systems["debug"] = {"mpido": "mpiexec -n {cores}", "submit": "echo", "job_id": "PBS_JOBID", "queue": {}}
 
-    '''
-    Return a list of supported bed types.
-    '''
-    
-    list = ['ctrl',
-            'cresis',
-            'cresisp',
-            'minus',
-            'plus',
-            'ba01_bed',
-            '970mW_hs',
-            'jak_1985',
-            'no_bath']
-    
-    return list
+systems["chinook"] = {
+    "mpido": "mpirun -np {cores} -machinefile ./nodes_$SLURM_JOBID",
+    "submit": "sbatch",
+    "work_dir": "SLURM_SUBMIT_DIR",
+    "job_id": "SLURM_JOBID",
+    "queue": {"t1standard": 24, "t1small": 24, "t2standard": 24, "t2small": 24, "debug": 24, "analysis": 24},
+}
+
+systems["pleiades"] = {
+    "mpido": "mpiexec -n {cores}",
+    "submit": "qsub",
+    "work_dir": "PBS_O_WORKDIR",
+    "job_id": "PBS_JOBID",
+    "queue": {"long": 20, "normal": 20},
+}
+
+systems["pleiades_haswell"] = systems["pleiades"].copy()
+systems["pleiades_haswell"]["queue"] = {"long": 24, "normal": 24}
+
+systems["pleiades_ivy"] = systems["pleiades"].copy()
+systems["pleiades_ivy"]["queue"] = {"long": 20, "normal": 20}
+
+systems["pleiades_sandy"] = systems["pleiades"].copy()
+systems["pleiades_sandy"]["queue"] = {"long": 16, "normal": 16}
+
+systems["pleiades_broadwell"] = systems["pleiades"].copy()
+systems["pleiades_broadwell"]["queue"] = {"long": 28, "normal": 28}
+
+systems["electra_broadwell"] = systems["pleiades_broadwell"].copy()
+
+systems["electra_skylake"] = systems["pleiades"].copy()
+systems["electra_skylake"]["queue"] = {"long": 40, "normal": 40}
 
 
-def make_batch_header(system, cores, walltime, queue):
-    '''
-    Generate header file for different HPC system.
+# headers for batch jobs
+#
+# Available keywords:
+#
+# cores    - number of cores (MPI tasks)
+# queue    - queue (partition) name
+# nodes    - number of nodes
+# ppn      - number of tasks per node
+# walltime - wall time limit
 
-    Returns: String
-    '''
-    
-    systems = {}
-    mpido = 'mpiexec -n {cores}'.format(cores=cores)
-    systems['debug'] = {'mpido' : mpido,
-                        'submit': 'echo',
-                        'job_id' : 'PBS_JOBID'}
-    mpido = 'mpiexec -n {cores}'.format(cores=cores)
-    systems['fish'] = {'mpido': 'aprun -n {cores}'.format(cores=cores),
-                       'submit' : 'qsub',
-                       'work_dir' : 'PBS_O_WORKDIR',
-                       'job_id' : 'PBS_JOBID',
-                       'queue' : {
-                           'gpu' : 16,
-                           'gpu_long' : 16,
-                           'standard' : 12 }}
-    mpido = 'mpirun -np {cores}'.format(cores=cores)
-    systems['pacman'] = {'mpido' : mpido,
-                         'submit' : 'qsub',
-                         'work_dir' : 'PBS_O_WORKDIR',
-                         'job_id' : 'PBS_JOBID',
-                         'queue' : {
-                             'standard_16' : 16 }}
-    mpido = 'mpirun -np {cores} -machinefile ./nodes_$SLURM_JOBID'.format(cores=cores)                         
-    systems['chinook'] = {'mpido' : mpido,
-                          'submit' : 'sbatch',
-                          'work_dir' : 'SLURM_SUBMIT_DIR',
-                          'job_id' : 'SLURM_JOBID',
-                          'queue' : {
-                              't1standard' : 24,
-                              't1small' : 24,
-                              't2standard' : 24,
-                              't2small' : 24,
-                              'debug' : 24}}
-    mpido = 'mpiexec.hydra -n {cores}'.format(cores=cores)
-    systems['pleiades'] = {'mpido' : mpido,
-                           'submit' : 'qsub',
-                           'work_dir' : 'PBS_O_WORKDIR',
-                           'job_id' : 'PBS_JOBID',
-                           'queue' : {
-                               'long' : 20,
-                               'normal': 20}}
-    systems['pleiades_ivy'] = {'mpido' : mpido,
-                           'submit' : 'qsub',
-                           'work_dir' : 'PBS_O_WORKDIR',
-                           'job_id' : 'PBS_JOBID',
-                           'queue' : {
-                               'long' : 20,
-                               'normal': 20}}
-    systems['pleiades_broadwell'] = {'mpido' : mpido,
-                           'submit' : 'qsub',
-                           'work_dir' : 'PBS_O_WORKDIR',
-                           'job_id' : 'PBS_JOBID',
-                           'queue' : {
-                               'long' : 28,
-                               'normal' : 28}}
-    mpido = 'mpirun -np {cores}'.format(cores=cores)
-    systems['garpur'] = {'mpido' : mpido,
-                         'submit' : 'qsub',
-                         'work_dir' : 'PBS_O_WORKDIR',
-                         'job_id' : 'PBS_JOBID',
-                         'queue' : {
-                             'short' : 24,
-                             'medium' : 24,
-                             'long' : 24,
-                             'verylong' : 24,
-                             'highmem' : 32}}
+systems["debug"]["header"] = ""
 
-    assert system in systems.keys()
-    if system not in 'debug':
-        assert queue in systems[system]['queue'].keys()
-        assert cores > 0
-
-        ppn = systems[system]['queue'][queue]
-        nodes = cores / ppn
-
-    if system in ('debug'):
-
-        header = ''
-        
-    elif system in ('chinook'):
-        
-        header = """#!/bin/sh
+systems["chinook"][
+    "header"
+] = """#!/bin/sh
 #SBATCH --partition={queue}
 #SBATCH --ntasks={cores}
 #SBATCH --tasks-per-node={ppn}
 #SBATCH --time={walltime}
-#SBATCH --mail-user=aaschwanden@alaska.edu
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
@@ -650,20 +522,51 @@ def make_batch_header(system, cores, walltime, queue):
 
 module list
 
+umask 007
+
 cd $SLURM_SUBMIT_DIR
 
 # Generate a list of compute node hostnames reserved for this job,
 # this ./nodes file is necessary for slurm to spawn mpi processes
 # across multiple compute nodes
-srun -l /bin/hostname | sort -n | awk \'{{print $2}}\' > ./nodes_$SLURM_JOBID
+srun -l /bin/hostname | sort -n | awk '{{print $2}}' > ./nodes_$SLURM_JOBID
 
-""".format(queue=queue, walltime=walltime, nodes=nodes, ppn=ppn, cores=cores)
-    elif system in ('pleiades'):
-        
-        header = """#PBS -S /bin/bash
+ulimit -l unlimited
+ulimit -s unlimited
+ulimit
+
+"""
+
+systems["chinook"][
+    "footer"
+] = """
+# clean up the list of hostnames
+rm -rf ./nodes_$SLURM_JOBID
+"""
+
+systems["electra_broadwell"][
+    "header"
+] = """#PBS -S /bin/bash
 #PBS -N cfd
 #PBS -l walltime={walltime}
 #PBS -m e
+#PBS -q {queue}
+#PBS -lselect={nodes}:ncpus={ppn}:mpiprocs={ppn}:model=bro_ele
+#PBS -j oe
+
+module list
+
+cd $PBS_O_WORKDIR
+
+"""
+
+systems["pleiades"][
+    "header"
+] = """#PBS -S /bin/bash
+#PBS -N cfd
+#PBS -l walltime={walltime}
+#PBS -m e
+#PBS -W group_list=s1878
 #PBS -q {queue}
 #PBS -lselect={nodes}:ncpus={ppn}:mpiprocs={ppn}:model=ivy
 #PBS -j oe
@@ -672,13 +575,15 @@ module list
 
 cd $PBS_O_WORKDIR
 
-""".format(queue=queue, walltime=walltime, nodes=nodes, ppn=ppn, cores=cores)
-    elif system in ('pleiades_broadwell'):
-        
-        header = """#PBS -S /bin/bash
+"""
+
+systems["pleiades_broadwell"][
+    "header"
+] = """#PBS -S /bin/bash
 #PBS -N cfd
 #PBS -l walltime={walltime}
 #PBS -m e
+#PBS -W group_list=s1878
 #PBS -q {queue}
 #PBS -lselect={nodes}:ncpus={ppn}:mpiprocs={ppn}:model=bro
 #PBS -j oe
@@ -687,47 +592,215 @@ module list
 
 cd $PBS_O_WORKDIR
 
-""".format(queue=queue, walltime=walltime, nodes=nodes, ppn=ppn, cores=cores)
-    else:
-        header = """#!/bin/bash
-#PBS -q {queue}
+"""
+
+systems["pleiades_sandy"][
+    "header"
+] = """#PBS -S /bin/bash
+#PBS -N cfd
 #PBS -l walltime={walltime}
-#PBS -l nodes={nodes}:ppn={ppn}
+#PBS -m e
+#PBS -W group_list=s1878
+#PBS -q {queue}
+#PBS -lselect={nodes}:ncpus={ppn}:mpiprocs={ppn}:model=san
 #PBS -j oe
 
 module list
 
 cd $PBS_O_WORKDIR
 
-""".format(queue=queue, walltime=walltime, nodes=nodes, ppn=ppn, cores=cores)
+"""
 
-    return header, systems[system]
+systems["pleiades_haswell"][
+    "header"
+] = """#PBS -S /bin/bash
+#PBS -N cfd
+#PBS -l walltime={walltime}
+#PBS -m e
+#PBS -W group_list=s1878
+#PBS -q {queue}
+#PBS -lselect={nodes}:ncpus={ppn}:mpiprocs={ppn}:model=has
+#PBS -j oe
+
+module list
+
+cd $PBS_O_WORKDIR
+
+"""
+
+systems["pleiades_ivy"][
+    "header"
+] = """#PBS -S /bin/bash
+#PBS -N cfd
+#PBS -l walltime={walltime}
+#PBS -m e
+#PBS -W group_list=s1878
+#PBS -q {queue}
+#PBS -lselect={nodes}:ncpus={ppn}:mpiprocs={ppn}:model=ivy
+#PBS -j oe
+
+module list
+
+cd $PBS_O_WORKDIR
+
+"""
+
+systems["electra_skylake"][
+    "header"
+] = """#PBS -S /bin/bash
+#PBS -N cfd
+#PBS -l walltime={walltime}
+#PBS -m e
+#PBS -W group_list=s1878
+#PBS -q {queue}
+#PBS -lselect={nodes}:ncpus={ppn}:mpiprocs={ppn}:model=sky_ele
+#PBS -j oe
+
+module list
+
+cd $PBS_O_WORKDIR
+
+"""
+
+systems["debug"][
+    "header"
+] = """
+
+"""
+
+# headers for post-processing jobs
+
+post_headers = {}
+post_headers[
+    "default"
+] = """#!/bin/bash
+
+"""
+
+post_headers[
+    "pbs"
+] = """#PBS -S /bin/bash
+#PBS -l select=1:mem=94GB
+#PBS -l walltime=8:00:00
+#PBS -q ldan
+
+cd $PBS_O_WORKDIR
+
+"""
+
+post_headers[
+    "slurm"
+] = """#!/bin/bash
+#SBATCH --partition=analysis
+#SBATCH --ntasks=1
+#SBATCH --tasks-per-node=1
+#SBATCH --time=48:00:00
+#SBATCH --output=pism.%j
+#SBATCH --mem=214G
+
+cd $SLURM_SUBMIT_DIR
+
+ulimit -l unlimited
+ulimit -s unlimited
+ulimit
+
+"""
+
+
+def make_batch_header(system_name, n_cores, walltime, queue):
+    """
+    Generate header file for different HPC system.
+
+    Returns: String
+    """
+
+    # get system info; use "debug" if the requested name was not found
+    system = systems.get(system_name, systems["debug"]).copy()
+
+    assert n_cores > 0
+
+    if system_name == "debug":
+        # when debugging, assume that all we need is one node
+        ppn = n_cores
+        nodes = 1
+    else:
+        try:
+            ppn = system["queue"][queue]
+        except:
+            raise ValueError(
+                "There is no queue {} on {}. Pick one of {}.".format(queue, system_name, list(system["queue"].keys()))
+            )
+        # round up when computing the number of nodes needed to run on 'n_cores' cores
+        nodes = int(math.ceil(float(n_cores) / ppn))
+
+        if nodes * ppn != n_cores:
+            print(
+                (
+                    "Warning! Running {n_cores} tasks on {nodes} {ppn}-processor nodes, wasting {N} processors!".format(
+                        nodes=nodes, ppn=ppn, n_cores=n_cores, N=ppn * nodes - n_cores
+                    )
+                )
+            )
+
+    system["mpido"] = system["mpido"].format(cores=n_cores)
+    system["header"] = system["header"].format(queue=queue, walltime=walltime, nodes=nodes, ppn=ppn, cores=n_cores)
+    system["header"] += version_header()
+
+    return system["header"], system
 
 
 def make_batch_post_header(system):
 
-    if system in ('pleiades', 'pleiades_ivy', 'pleiades_broadwell'):
+    v = version_header()
 
-        header = """#PBS -S /bin/bash
-#PBS -lselect=1:mem=94GB
-#PBS -lwalltime=8:00:00
-#PBS -q ldan
-
-module list
-
-cd $PBS_O_WORKDIR
-
-"""
+    if system in ("electra_broadwell", "pleiades", "pleiades_ivy", "pleiades_broadwell", "pleiades_haswell"):
+        return post_headers["pbs"] + v
+    elif system in ("chinook"):
+        return post_headers["slurm"] + v
     else:
-        header = """#!/bin/bash
-#PBS -q medium
-#PBS -l walltime=12:00:00
-#PBS -l nodes=1:ppn=1
-#PBS -j oe
+        return post_headers["default"] + v
 
-module list
 
-cd $PBS_O_WORKDIR
+def make_batch_header_test():
+    "print headers of all supported systems and queues (for testing)"
+    for s in list(systems.keys()):
+        for q in list(systems[s]["queue"].keys()):
+            print("# system: {system}, queue: {queue}".format(system=s, queue=q))
+            print(make_batch_header(s, 100, "1:00:00", q)[0])
 
-"""
-        return header
+
+def version():
+    """Return the path to the top directory of the Git repository
+    containing this script, the URL of the "origin" remote and the version."""
+    import inspect
+    import shlex
+    import subprocess
+
+    def output(command):
+        path = os.path.realpath(os.path.dirname(inspect.stack(0)[0][1]))
+        return subprocess.check_output(shlex.split(command), cwd=path).strip()
+
+    return (
+        output("git rev-parse --show-toplevel"),
+        output("git remote get-url origin"),
+        output("git describe --always"),
+    )
+
+
+def version_header():
+    "Return shell comments containing version info."
+    version_info = version()
+    return """
+# Generated by {script}
+# Command: {command}
+# Git top level: {path}
+# URL: {url}
+# Version: {version}
+
+""".format(
+        script=os.path.realpath(sys.argv[0]),
+        command=" ".join(sys.argv),
+        path=version_info[0],
+        url=version_info[1],
+        version=version_info[2],
+    )
