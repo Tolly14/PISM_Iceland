@@ -5,7 +5,9 @@ import numpy as np
 from pyproj import Proj
 
 p = Proj("+proj=lcc +lat_0=64.7 +lon_0=-19 +lat_1=64.7 +lat_2=64.7 +x_0=0 +y_0=0 +ellps=GRS80 +units=m +no_defs")
-xm, ym = 359.451, 309.670
+
+xm, ym = 359.451, 309.670  # ??
+xm, ym = 228.290, 188.670  # ICRA
 
 # set up the argument parser
 parser = ArgumentParser()
