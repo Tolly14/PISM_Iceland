@@ -39,8 +39,7 @@ for s, mvar in enumerate(var_names):
         vs_df = pd.DataFrame(data=df[sigma_col].values, columns=[mvar_sigma])
         # Merge with Sector, need to reset index to start a 0
         vs_df = pd.merge(df["Sector"].reset_index(drop=True), vs_df, left_index=True, right_index=True)
-        # Apply grouping function, sum up
-        # FIXME here we need function that adds the squares
+        # Apply grouping function, sum up squares
         vs_df = vs_df.groupby(lambda x: merge_sectors(vs_df, x)).agg(lambda x: np.sqrt(np.sum(x ** 2)))
         v_df["Sector"] = v_df.index.values
         v_df.reset_index(drop=True, inplace=True)
@@ -65,10 +64,49 @@ cumsum_df = flux_df.cumsum()
 cumsum_df["Sector"] = flux_df["Sector"]
 cumsum_df["Year"] = flux_df["Year"]
 
+total_flux = flux_df.groupby("Year").agg(lambda x: np.sqrt(np.sum(x ** 2)) if "sigma" in x else np.sum(x))
+
 import seaborn as sns
 
+colors = sns.cubehelix_palette(8, start=0.5, rot=-0.75).as_hex()
+
 for mvar in ["m-dot"]:
-    ax = sns.lineplot(x="Year", y=mvar, data=cumsum_df, hue="Sector", palette=sns.cubehelix_palette(8), linewidth=1)
-    fig = ax.get_figure()
+
+    mvar_sigma = mvar + "_sigma"
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for sector in range(8):
+        df = cumsum_df[cumsum_df["Sector"] == sector]
+        ax.fill_between(
+            df["Year"],
+            df[mvar] - df[mvar_sigma],
+            df[mvar] + df[mvar_sigma],
+            color=colors[sector],
+            alpha=0.1,
+            linewidth=0.25,
+        )
+        ax.plot(df["Year"], df[mvar], color=colors[sector], linewidth=0.5)
+        fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
+
+for mvar in ["m-dot"]:
+
+    mvar_sigma = mvar + "_sigma"
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for sector in range(8):
+        df = cumsum_df[cumsum_df["Sector"] == sector]
+        df = flux_df[cumsum_df["Sector"] == sector]
+        ax.errorbar(df["Year"], df[mvar], yerr=df[mvar_sigma], color=colors[sector], linewidth=0.5, fmt="o")
+        fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
+
+for mvar in ["m-dot"]:
+
+    mvar_sigma = mvar + "_sigma"
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    df = cumsum_df.groupby(["Sector", "Year"]).sum()
+    ax.plot(df["Year"], df[mvar], color=colors[sector], linewidth=0.5)
     fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
-    del ax, fig
