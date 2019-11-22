@@ -111,3 +111,10 @@ for mvar in ["m-dot"]:
     df = cumsum_df.groupby(["Sector", "Year"]).sum()
     ax.plot(df["Year"], df[mvar], color=colors[sector], linewidth=0.5)
     fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
+
+
+for mvar in ["m-dot"]:
+
+    mvar_sigma = mvar + "_sigma"
+    sns.barplot
+    fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
