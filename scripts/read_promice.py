@@ -102,19 +102,19 @@ for mvar in ["m-dot"]:
         ax.errorbar(df["Year"], df[mvar], yerr=df[mvar_sigma], color=colors[sector], linewidth=0.5, fmt="o")
         fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
 
-for mvar in ["m-dot"]:
+# for mvar in ["m-dot"]:
 
-    mvar_sigma = mvar + "_sigma"
+#     mvar_sigma = mvar + "_sigma"
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    df = cumsum_df.groupby(["Sector", "Year"]).sum()
-    ax.plot(df["Year"], df[mvar], color=colors[sector], linewidth=0.5)
-    fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111)
+#     df = cumsum_df.groupby(["Sector", "Year"]).sum()
+#     ax.plot(df["Year"], df[mvar], color=colors[sector], linewidth=0.5)
+#     fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
 
 
-for mvar in ["m-dot"]:
+# for mvar in ["m-dot"]:
 
-    mvar_sigma = mvar + "_sigma"
-    sns.barplot
-    fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
+#     mvar_sigma = mvar + "_sigma"
+#     sns.barplot
+#     fig.savefig("promice-{}.pdf".format(mvar), bbox_inches="tight")
