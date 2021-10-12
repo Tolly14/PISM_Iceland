@@ -34,6 +34,13 @@ def generate_domain(domain):
 
     if domain.lower() in ("iceland"):
         pism_exec = "pismr"
+    elif domain.lower() in ("vatnajoekull"):
+        x_min = 530000.0
+        x_max = 700000.0
+        y_min = 360000.0
+        y_max = 500000.0
+        pism_exec = """pismr -regional -x_range {x_min},{x_max} -y_range {y_min},{y_max}  -bootstrap -regional.zero_gradient true -regional.no_model_strip 2.5""".format(
+            x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max)
     else:
         print(("Domain {} not recognized, exiting".format(domain)))
         import sys
@@ -45,7 +52,6 @@ def generate_domain(domain):
 spatial_ts_vars = {}
 
 spatial_ts_vars["basic"] = [
-    "bwat",
     "dHdt",
     "climatic_mass_balance",
     "ice_mass",
@@ -58,6 +64,7 @@ spatial_ts_vars["basic"] = [
     "usurf",
     "velbase_mag",
     "velsurf_mag",
+    "tillwat",
 ]
 
 spatial_ts_vars["pdd"] = [
@@ -173,7 +180,11 @@ def generate_grid_description(grid_resolution, domain, restart=False):
 
         mx_max = 1201
         my_max = 801
-
+            
+    elif domain.lower() in ("vatnajoekull"):
+        mx_max = 341
+        my_max = 281
+            
     else:
         print("how did I get here")
 
@@ -276,7 +287,6 @@ def generate_stress_balance(stress_balance, additional_params_dict):
         params_dict["kill_icebergs"] = ""
         params_dict["part_grid"] = ""
         params_dict["part_redist"] = ""
-        params_dict["sia_flow_law"] = "gpbld"
         params_dict["pseudo_plastic"] = ""
         params_dict["tauc_slippery_grounding_lines"] = ""
 

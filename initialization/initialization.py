@@ -56,7 +56,7 @@ parser.add_argument(
     "-q", "--queue", dest="queue", choices=list_queues(), help="""queue. default=long.""", default="long"
 )
 parser.add_argument(
-    "-d", "--domain", dest="domain", choices=["iceland"], help="sets the modeling domain", default="iceland"
+    "-d", "--domain", dest="domain", choices=["iceland", "vatnajoekull"], help="sets the modeling domain", default="iceland"
 )
 parser.add_argument("--exstep", dest="exstep", help="Writing interval for spatial time series", default=1)
 parser.add_argument(
@@ -150,8 +150,8 @@ pism_exec = generate_domain(domain)
 
 
 print(domain)
-if domain.lower() in ("iceland"):
-    pism_dataname = "$input_dir/data_sets/bed_dem/pism_Iceland_2010.nc"
+if domain.lower() in ("iceland", "vatnajoekull"):
+    pism_dataname = f"$input_dir/data_sets/bed_dem/pism_g{grid}m_Iceland_2010.nc"
 else:
     print("Domain {} not recognized".format(domain))
 
@@ -364,8 +364,9 @@ for n, row in enumerate(uq_df.iterrows()):
                     grid_params_dict = generate_grid_description(grid, domain, restart=True)
 
                 sb_params_dict = {
-                    "sia_flow_law": "isothermal_glen",
-                    "ssa_flow_law": "isothermal_glen",
+                    "stress_balance.sia.flow_law": "isothermal_glen",
+                    "stress_balance.ssa.flow_law": "isothermal_glen",
+                    "stress_balance.blatter.flow_law": "isothermal_glen",
                     "flow_law.isothermal_Glen.ice_softness": a_glen,
                     "pseudo_plastic_q": ppq,
                     "till_effective_fraction_overburden": tefo,
@@ -385,6 +386,8 @@ for n, row in enumerate(uq_df.iterrows()):
 
                 hydro_params_dict = generate_hydrology(hydrology)
 
+                calving_params_dict = {"calving": "float_kill", "front_retreat_file": pism_dataname}
+
                 scalar_ts_dict = generate_scalar_ts(
                     outfile, tsstep, start=simulation_start_year, end=simulation_end_year, odir=dirs["scalar"]
                 )
@@ -395,6 +398,7 @@ for n, row in enumerate(uq_df.iterrows()):
                     stress_balance_params_dict,
                     climate_params_dict,
                     hydro_params_dict,
+                    calving_params_dict,
                     scalar_ts_dict,
                 )
 

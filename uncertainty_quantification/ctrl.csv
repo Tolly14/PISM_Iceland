@@ -1,0 +1,3 @@
+run_id,climate_file,ppq,a_glen,tefo,phi_min,phi_max,topg_min,topg_max
+CTRL,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2.5e-23,0.02,5,15,-1000,0
+LINEAR,HARMONIE_glac_corr_1980_2016_TM.nc,1.0,2.5e-23,0.02,5,15,-1000,0
