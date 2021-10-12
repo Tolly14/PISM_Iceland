@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright (C) 2016-19 Andy Aschwanden
+#!/usr/bin/env python3
+# Copyright (C) 2016-21 Andy Aschwanden
 
 import itertools
 from collections import OrderedDict
@@ -8,6 +8,7 @@ import os
 import sys
 import shlex
 from os.path import join, abspath, realpath, dirname
+import pandas as pd
 
 try:
     import subprocess32 as sub
@@ -38,7 +39,7 @@ def map_dict(val, mdict):
         return val
 
 
-grid_choices = (250, 500, 1000, 2000, 5000, 10000, 20000, 40000)
+grid_choices = (500, 1000, 2000, 4000)
 # set up the option parser
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.description = "Generating scripts for model initialization."
@@ -46,20 +47,13 @@ parser.add_argument(
     "-i", "--initial_state_file", dest="initialstatefile", help="Input file to restart from", default=None
 )
 parser.add_argument(
-    "-n", "--n_procs", dest="n", type=int, help="""number of cores/processors. default=140.""", default=140
+    "-n", "--n_procs", dest="n", type=int, help="""number of cores/processors. default=4.""", default=4
 )
 parser.add_argument(
     "-w", "--wall_time", dest="walltime", help="""walltime. default: 100:00:00.""", default="100:00:00"
 )
 parser.add_argument(
     "-q", "--queue", dest="queue", choices=list_queues(), help="""queue. default=long.""", default="long"
-)
-parser.add_argument(
-    "--calving",
-    dest="calving",
-    choices=["float_kill", "vonmises_calving", "eigen_calving"],
-    help="calving",
-    default="float_kill",
 )
 parser.add_argument(
     "-d", "--domain", dest="domain", choices=["iceland"], help="sets the modeling domain", default="iceland"
@@ -69,9 +63,9 @@ parser.add_argument(
     "-f",
     "--o_format",
     dest="oformat",
-    choices=["netcdf3", "netcdf4_parallel", "pnetcdf"],
+    choices=["netcdf3", "netcdf4_parallel", "netcdf4_serial", "pnetcdf"],
     help="output format",
-    default="netcdf4_parallel",
+    default="netcdf3",
 )
 parser.add_argument(
     "-g", "--grid", dest="grid", type=int, choices=grid_choices, help="horizontal grid resolution", default=500
@@ -113,19 +107,19 @@ parser.add_argument(
 parser.add_argument(
     "--stress_balance",
     dest="stress_balance",
-    choices=["sia", "ssa+sia", "ssa"],
+    choices=["sia", "ssa+sia", "ssa", "blatter"],
     help="stress balance solver",
     default="ssa+sia",
 )
 parser.add_argument("--start_year", dest="start_year", type=int, help="Simulation start year", default=0)
-parser.add_argument("--duration", dest="duration", type=int, help="Years to simulate", default=1000)
-parser.add_argument("--step", dest="step", type=int, help="Step in years for restarting", default=1000)
+parser.add_argument("--duration", dest="duration", type=int, help="Years to simulate", default=100)
+parser.add_argument("--step", dest="step", type=int, help="Step in years for restarting", default=100)
 parser.add_argument(
     "-e",
     "--ensemble_file",
     dest="ensemble_file",
     help="File that has all combinations for ensemble study",
-    default="../uncertainty_quantification/initialization.csv",
+    default="../uncertainty_quantification/ctrl.csv",
 )
 
 options = parser.parse_args()
@@ -143,10 +137,7 @@ system = options.system
 
 spatial_ts = options.spatial_ts
 
-calving = options.calving
-climate = "warming"
 exstep = options.exstep
-float_kill_calve_near_grounding_line = options.float_kill_calve_near_grounding_line
 initialstatefile = options.initialstatefile
 grid = options.grid
 hydrology = options.hydrology
@@ -160,7 +151,7 @@ pism_exec = generate_domain(domain)
 
 print(domain)
 if domain.lower() in ("iceland"):
-    pism_dataname = "$input_dir/data_sets/bed_dem/pism_Iceland_1993.nc"
+    pism_dataname = "$input_dir/data_sets/bed_dem/pism_Iceland_2010.nc"
 else:
     print("Domain {} not recognized".format(domain))
 
@@ -234,13 +225,10 @@ firn = "ctrl"
 lapse_rate = 6
 bed_deformation = "ip"
 
-if system == "debug":
-    combinations = np.genfromtxt(ensemble_file, dtype=None, encoding=None, delimiter=",", skip_header=1)
-else:
-    combinations = np.genfromtxt(ensemble_file, dtype=None, delimiter=",", skip_header=1)
+uq_df = pd.read_csv(ensemble_file)
+uq_df.fillna(False, inplace=True)
 
-
-tsstep = "yearly"
+tsstep = "monthly"
 
 scripts = []
 scripts_combinded = []
@@ -269,9 +257,11 @@ post_header = make_batch_post_header(system)
 
 m_sb = None
 
-for n, combination in enumerate(combinations):
+for n, row in enumerate(uq_df.iterrows()):
+    combination = row[1]
+    print(combination)
 
-    run_id, ppq, a_glen, tefo, phi_min, phi_max, topg_min, topg_max = combination
+    run_id, climate_file, ppq, a_glen, tefo, phi_min, phi_max, topg_min, topg_max = combination
 
     ttphi = "{},{},{},{}".format(phi_min, phi_max, topg_min, topg_max)
 
@@ -281,8 +271,7 @@ for n, combination in enumerate(combinations):
     except:
         name_options["id"] = "{}".format(str(run_id))
 
-    vversion = "v" + str(version)
-    full_exp_name = "_".join([vversion, "_".join(["_".join([k, str(v)]) for k, v in list(name_options.items())])])
+    full_exp_name = "_".join(["_".join(["_".join([k, str(v)]) for k, v in list(name_options.items())])])
     full_outfile = "{domain}_g{grid}m_{experiment}.nc".format(domain=domain.lower, grid=grid, experiment=full_exp_name)
 
     # All runs in one script file for coarse grids that fit into max walltime
@@ -298,7 +287,6 @@ for n, combination in enumerate(combinations):
 
             experiment = "_".join(
                 [
-                    vversion,
                     "_".join(["_".join([k, str(v)]) for k, v in list(name_options.items())]),
                     "{}".format(start),
                     "{}".format(end),
@@ -337,6 +325,20 @@ for n, combination in enumerate(combinations):
                     "o": join(dirs["state"], outfile),
                     "o_format": oformat,
                     "config_override": "$config",
+                    "stress_balance.blatter.coarsening_factor": 4,
+                    "blatter_Mz": 17,
+                    "bp_ksp_type": "gmres",
+                    "bp_pc_type": "mg",
+                    "bp_pc_mg_levels": 3,
+                    "bp_mg_levels_ksp_type": "richardson",
+                    "bp_mg_levels_pc_type": "sor",
+                    "bp_mg_coarse_ksp_type": "preonly",
+                    "bp_mg_coarse_pc_type": "lu",
+                    "bp_snes_monitor_ratio": "",
+                    "bp_ksp_monitor": "",
+                    # "bp_snes_ksp_ew": "",
+                    # "bp_snes_ksp_ew_version": 3,
+                    "stress_balance.ice_free_thickness_standard": 10,
                 }
 
                 if start == simulation_start_year:
@@ -350,9 +352,6 @@ for n, combination in enumerate(combinations):
                         general_params_dict["regrid_vars"] = regridvars
                 else:
                     general_params_dict["i"] = regridfile
-
-                if (start == simulation_start_year) and (topg_delta_file is not None):
-                    general_params_dict["topg_delta_file"] = topg_delta_file
 
                 if osize != "custom":
                     general_params_dict["o_size"] = osize
@@ -380,27 +379,11 @@ for n, combination in enumerate(combinations):
                     stress_balance = sb_dict[m_sb]
                 stress_balance_params_dict = generate_stress_balance(stress_balance, sb_params_dict)
 
-                climate_parameters = {}
+                climate_parameters = {"surface_given_file": f"../data_sets/climate_forcing/{climate_file}"}
 
-                climate_params_dict = generate_climate("paleo", **climate_parameters)
+                climate_params_dict = generate_climate("harmonie", **climate_parameters)
 
                 hydro_params_dict = generate_hydrology(hydrology)
-
-                calving_parameters = {"thickness_calving_threshold": 50}
-
-                calving_params_dict = generate_calving(calving, **calving_parameters)
-
-                front_retreat_params_dict = {"front_retreat_file": pism_dataname}
-                ocean_params_dict = {
-                    "shelf_base_melt_rate": 0.2,
-                    "ocean_delta_SL_file": "../data_sets/climate_forcing/arctic_paleo_modifier.nc",
-                    "ocean_frac_MBP_file": "../data_sets/climate_forcing/arctic_paleo_modifier.nc",
-                }
-
-                if mbp == 1:
-                    ocean_params_dict["ocean"] = "constant,frac_MBP"
-                else:
-                    ocean_params_dict["ocean"] = "constant"
 
                 scalar_ts_dict = generate_scalar_ts(
                     outfile, tsstep, start=simulation_start_year, end=simulation_end_year, odir=dirs["scalar"]
@@ -412,8 +395,6 @@ for n, combination in enumerate(combinations):
                     stress_balance_params_dict,
                     climate_params_dict,
                     hydro_params_dict,
-                    ocean_params_dict,
-                    calving_params_dict,
                     scalar_ts_dict,
                 )
 
@@ -424,6 +405,10 @@ for n, combination in enumerate(combinations):
                     )
                     all_params_dict = merge_dicts(all_params_dict, spatial_ts_dict)
 
+                if stress_balance == "blatter":
+                    del all_params_dict["skip"]
+                    all_params_dict["time_stepping.adaptive_ratio"] = 25
+                    
                 all_params = " \\\n  ".join(["-{} {}".format(k, v) for k, v in list(all_params_dict.items())])
 
                 if system == "debug":

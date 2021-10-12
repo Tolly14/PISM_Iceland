@@ -48,7 +48,6 @@ spatial_ts_vars["basic"] = [
     "bwat",
     "dHdt",
     "climatic_mass_balance",
-    "diffusivity",
     "ice_mass",
     "ice_surface_temp",
     "mask",
@@ -180,7 +179,7 @@ def generate_grid_description(grid_resolution, domain, restart=False):
 
     resolution_max = 500
 
-    accepted_resolutions = (500, 1000)
+    accepted_resolutions = (500, 1000, 2000, 4000)
 
     try:
         grid_resolution in accepted_resolutions
@@ -190,7 +189,6 @@ def generate_grid_description(grid_resolution, domain, restart=False):
 
     skip_max = 200
     mz = 401
-    mzb = 21
 
     grid_div = grid_resolution / resolution_max
 
@@ -203,10 +201,9 @@ def generate_grid_description(grid_resolution, domain, restart=False):
 
     vertical_grid = OrderedDict()
     vertical_grid["Lz"] = 4000
-    vertical_grid["Lbz"] = 2000
+    vertical_grid["Lbz"] = 0
     vertical_grid["z_spacing"] = "equal"
     vertical_grid["Mz"] = mz
-    vertical_grid["Mbz"] = mzb
 
     grid_options = {}
     grid_options["skip"] = ""
@@ -262,7 +259,7 @@ def generate_stress_balance(stress_balance, additional_params_dict):
     Returns: OrderedDict
     """
 
-    accepted_stress_balances = ("sia", "ssa+sia")
+    accepted_stress_balances = ("sia", "ssa+sia", "blatter")
 
     if stress_balance not in accepted_stress_balances:
         print(("{} not in {}".format(stress_balance, accepted_stress_balances)))
@@ -358,6 +355,8 @@ def generate_climate(climate, **kwargs):
         params_dict["surface"] = "elevation"
         params_dict["ice_surface_temp"] = "0,-15,-100,5000"
         params_dict["climatic_mass_balance"] = "-6.,2.5,0,1000,2500"
+    elif climate in ("harmonie"):
+        params_dict["surface"] = "given"
     elif climate in ("present"):
         params_dict["atmosphere"] = "given,lapse_rate"
         params_dict["surface.pdd.factor_ice"] = 10.5 / 910  # Ziemen et al (2016)
