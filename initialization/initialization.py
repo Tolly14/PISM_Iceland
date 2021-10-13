@@ -127,7 +127,6 @@ options = parser.parse_args()
 nn = options.n
 input_dir = abspath(options.input_dir)
 output_dir = abspath(options.output_dir)
-spatial_tmp_dir = abspath(options.output_dir + "_tmp")
 
 oformat = options.oformat
 osize = options.osize
@@ -157,7 +156,7 @@ else:
 
 regridvars = "litho_temp,enthalpy,age,tillwat,bmelt,ice_area_specific_volume,thk"
 
-dirs = {"output": "$output_dir", "spatial_tmp": "$spatial_tmp_dir"}
+dirs = {"output": "$output_dir"}
 for d in ["performance", "state", "scalar", "spatial", "jobs", "basins"]:
     dirs[d] = "$output_dir/{dir}".format(dir=d)
 
@@ -191,9 +190,6 @@ config="{config}"
 input_dir="{input_dir}"
 # output directory
 output_dir="{output_dir}"
-# temporary directory for spatial files
-spatial_tmp_dir="{spatial_tmp_dir}"
-
 # create required output directories
 for each in {dirs};
 do
@@ -203,7 +199,6 @@ done
 """.format(
     input_dir=input_dir,
     output_dir=output_dir,
-    spatial_tmp_dir=spatial_tmp_dir,
     config=pism_config_nc,
     dirs=" ".join(list(dirs.values())),
 )
@@ -338,7 +333,7 @@ for n, row in enumerate(uq_df.iterrows()):
                     "bp_ksp_monitor": "",
                     # "bp_snes_ksp_ew": "",
                     # "bp_snes_ksp_ew_version": 3,
-                    "stress_balance.ice_free_thickness_standard": 10,
+                    "stress_balance.ice_free_thickness_standard": 5,
                 }
 
                 if start == simulation_start_year:
@@ -405,7 +400,7 @@ for n, row in enumerate(uq_df.iterrows()):
                 if not spatial_ts == "none":
                     exvars = spatial_ts_vars[spatial_ts]
                     spatial_ts_dict = generate_spatial_ts(
-                        outfile, exvars, exstep, odir=dirs["spatial_tmp"], split=False
+                        outfile, exvars, exstep, odir=dirs["spatial"], split=False
                     )
                     all_params_dict = merge_dicts(all_params_dict, spatial_ts_dict)
 
