@@ -7,7 +7,7 @@ echo $1
 echo $2
 
 for grid in 500 1000 2000 4000; do
-gdalwarp -r average -tr $grid $grid -overwrite -s_srs EPSG:3057 -t_srs EPSG:3057 -of netCDF ${indir}/island500x500_an_jökla_landgrunni93.grd pism_g${grid}m_Iceland_bed.nc
+gdalwarp -r average -tr $grid $grid -overwrite -s_srs EPSG:3057 -t_srs EPSG:3057 -of netCDF ${indir}/island500x500_an_jökla_landgrunni93.grd pism_g${grid}m_Iceland_bed.nc
 ncrename -v Band1,topg pism_g${grid}m_Iceland_bed.nc
 ncatted -a standard_name,topg,o,c,"bedrock_altitude" -a units,topg,o,c,"m" pism_g${grid}m_Iceland_bed.nc
 
