@@ -11,7 +11,7 @@ gdalwarp -r average -tr $grid $grid -overwrite -s_srs EPSG:3057 -t_srs EPSG:3057
 ncrename -v Band1,topg pism_g${grid}m_Iceland_bed.nc
 ncatted -a standard_name,topg,o,c,"bedrock_altitude" -a units,topg,o,c,"m" pism_g${grid}m_Iceland_bed.nc
 
-cut="-cutline ${rgidir}/06_rgi60_Iceland_fixed.shp"
+cut="-cutline ${rgidir}/06_rgi60_Iceland_selection.shp"
 gdalwarp -r average -tr $grid $grid -overwrite -srcnodata 1.70141e+38 -dstnodata 0 -s_srs EPSG:3057 $cut -of netCDF ${indir}/island500x500.grd pism_g${grid}m_Iceland_2010.nc
 ncrename -v Band1,usurf pism_g${grid}m_Iceland_2010.nc
 ncatted -a standard_name,usurf,o,c,"surface_altitude" -a units,usurf,o,c,"m" pism_g${grid}m_Iceland_2010.nc

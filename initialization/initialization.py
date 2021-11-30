@@ -56,7 +56,12 @@ parser.add_argument(
     "-q", "--queue", dest="queue", choices=list_queues(), help="""queue. default=long.""", default="long"
 )
 parser.add_argument(
-    "-d", "--domain", dest="domain", choices=["iceland", "vatnajoekull"], help="sets the modeling domain", default="iceland"
+    "-d",
+    "--domain",
+    dest="domain",
+    choices=["iceland", "vatnajoekull"],
+    help="sets the modeling domain",
+    default="iceland",
 )
 parser.add_argument("--exstep", dest="exstep", help="Writing interval for spatial time series", default=1)
 parser.add_argument(
@@ -331,8 +336,6 @@ for n, row in enumerate(uq_df.iterrows()):
                     "bp_mg_coarse_pc_type": "lu",
                     "bp_snes_monitor_ratio": "",
                     "bp_ksp_monitor": "",
-                    # "bp_snes_ksp_ew": "",
-                    # "bp_snes_ksp_ew_version": 3,
                     "stress_balance.ice_free_thickness_standard": 5,
                 }
 
@@ -363,6 +366,7 @@ for n, row in enumerate(uq_df.iterrows()):
                     "stress_balance.ssa.flow_law": "isothermal_glen",
                     "stress_balance.blatter.flow_law": "isothermal_glen",
                     "flow_law.isothermal_Glen.ice_softness": a_glen,
+                    "pseudo_plastic": "",
                     "pseudo_plastic_q": ppq,
                     "till_effective_fraction_overburden": tefo,
                 }
@@ -399,15 +403,13 @@ for n, row in enumerate(uq_df.iterrows()):
 
                 if not spatial_ts == "none":
                     exvars = spatial_ts_vars[spatial_ts]
-                    spatial_ts_dict = generate_spatial_ts(
-                        outfile, exvars, exstep, odir=dirs["spatial"], split=False
-                    )
+                    spatial_ts_dict = generate_spatial_ts(outfile, exvars, exstep, odir=dirs["spatial"], split=False)
                     all_params_dict = merge_dicts(all_params_dict, spatial_ts_dict)
 
                 if stress_balance == "blatter":
                     del all_params_dict["skip"]
                     all_params_dict["time_stepping.adaptive_ratio"] = 25
-                    
+
                 all_params = " \\\n  ".join(["-{} {}".format(k, v) for k, v in list(all_params_dict.items())])
 
                 if system == "debug":
