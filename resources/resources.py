@@ -367,6 +367,8 @@ def generate_climate(climate, **kwargs):
         params_dict["climatic_mass_balance"] = "-6.,2.5,0,1000,2500"
     elif climate in ("harmonie"):
         params_dict["surface"] = "given"
+    elif climate == "harmonie_flux":
+        params_dict["surface"] = "given,forcing"
     elif climate in ("present"):
         params_dict["atmosphere"] = "given,lapse_rate"
         params_dict["surface.pdd.factor_ice"] = 10.5 / 910  # Ziemen et al (2016)
@@ -479,6 +481,14 @@ systems["chinook"] = {
     "queue": {"t1standard": 24, "t1small": 24, "t2standard": 24, "t2small": 24, "debug": 24, "analysis": 24},
 }
 
+systems["elja"] = {
+    "mpido": "mpirun -np {cores}",
+    "submit": "sbatch",
+    "work_dir": "SLURM_SUBMIT_DIR",
+    "job_id": "SLURM_JOBID",
+    "queue": {"48cpu_192mem": 48, "64cpu_256mem": 64, "128cpu_256mem": 128},
+}
+
 systems["pleiades"] = {
     "mpido": "mpiexec -n {cores}",
     "submit": "qsub",
@@ -516,6 +526,28 @@ systems["electra_skylake"]["queue"] = {"long": 40, "normal": 40}
 # walltime - wall time limit
 
 systems["debug"]["header"] = ""
+
+systems["elja"][
+    "header"
+] = """#!/bin/sh
+#SBATCH --partition={queue}
+#SBATCH --ntasks={cores}
+#SBATCH --tasks-per-node={ppn}
+#SBATCH --time={walltime}
+#SBATCH --mail-type=BEGIN
+#SBATCH --mail-type=END
+#SBATCH --mail-type=FAIL
+#SBATCH --output=pism.%j
+
+module list
+
+ulimit -l unlimited
+ulimit -s unlimited
+ulimit
+
+"""
+
+
 
 systems["chinook"][
     "header"
@@ -676,6 +708,8 @@ systems["debug"][
 ] = """
 
 """
+
+
 
 # headers for post-processing jobs
 

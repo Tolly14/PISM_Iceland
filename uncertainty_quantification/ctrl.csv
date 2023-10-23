@@ -1,5 +1,6 @@
-run_id,climate_file,ppq,a_glen,tefo,phi_min,phi_max,topg_min,topg_max
-CTRL,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2e-24,0.02,5,15,-1000,0
-CTRL-2.5,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2.5e-24,0.02,5,15,-1000,0
-CTRL-5.0,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,5.0e-24,0.02,5,15,-1000,0
-LINEAR,HARMONIE_glac_corr_1980_2016_TM.nc,1.0,2e-24,0.02,5,15,-1000,0
+run_id,climate,climate_file,ppq,a_glen,tefo,phi_min,phi_max,topg_min,topg_max
+CTRL,harmonie_flux,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2e-24,0.02,15,30,-1000,0
+PHI-HIGH,harmonie_flux,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2e-24,0.02,20,40,-1000,500
+PHI-TEFO,harmonie_flux,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2e-24,0.05,20,35,-1000,500
+PHI-TEFO-3,harmonie_flux,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2e-24,0.04,20,40,-1000,1000
+PHI-TEFO-0.035,harmonie_flux,HARMONIE_glac_corr_1980_2016_TM.nc,0.5,2e-24,0.035,20,40,-1000,500

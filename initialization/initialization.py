@@ -261,7 +261,7 @@ for n, row in enumerate(uq_df.iterrows()):
     combination = row[1]
     print(combination)
 
-    run_id, climate_file, ppq, a_glen, tefo, phi_min, phi_max, topg_min, topg_max = combination
+    run_id, climate, climate_file, ppq, a_glen, tefo, phi_min, phi_max, topg_min, topg_max = combination
 
     ttphi = "{},{},{},{}".format(phi_min, phi_max, topg_min, topg_max)
 
@@ -382,9 +382,10 @@ for n, row in enumerate(uq_df.iterrows()):
                     stress_balance = sb_dict[m_sb]
                 stress_balance_params_dict = generate_stress_balance(stress_balance, sb_params_dict)
 
-                climate_parameters = {"surface_given_file": f"../data_sets/climate_forcing/{climate_file}"}
+                climate_parameters = {"surface_given_file": f"../data_sets/climate_forcing/{climate_file}",
+                                      "surface.force_to_thickness.file": pism_dataname}
 
-                climate_params_dict = generate_climate("harmonie", **climate_parameters)
+                climate_params_dict = generate_climate(climate, **climate_parameters)
 
                 hydro_params_dict = generate_hydrology(hydrology)
 

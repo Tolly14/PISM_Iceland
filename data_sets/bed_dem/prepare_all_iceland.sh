@@ -20,5 +20,7 @@ ncap2 -O -s "thk=usurf-topg; where(thk<0) thk=0; where(usurf<=0) thk=0; where(th
 ncatted -a standard_name,thk,o,c,"land_ice_thickness" -a _FillValue,thk,d,, -a _FillValue,usurf,d,, -a _FillValue,topg,d,, pism_g${grid}m_Iceland_2010.nc
     
  ncap2 -O -s 'land_ice_area_fraction_retreat = thk; where(thk > 0) land_ice_area_fraction_retreat = 1;land_ice_area_fraction_retreat@units="1";land_ice_area_fraction_retreat@long_name="maximum ice extent mask";land_ice_area_fraction_retreat@standard_name="";' pism_g${grid}m_Iceland_2010.nc pism_g${grid}m_Iceland_2010.nc
-ncap2 -O -s "where(thk<0) thk=0;" pism_g${grid}m_Iceland_2010.nc pism_g${grid}m_Iceland_2010.nc
+ncap2 -O -s "where(thk<0) thk=0; ftt_mask[\$y,\$x]=0b; ftt_mask=1;" pism_g${grid}m_Iceland_2010.nc pism_g${grid}m_Iceland_2010.nc
 done
+
+
