@@ -236,8 +236,8 @@ batch_header, batch_system = make_batch_header(system, nn, walltime, queue)
 post_header = make_batch_post_header(system)
 
 for n, row in enumerate(uq_df.iterrows()):
+    print(row)
     combination = row[1]
-    print(combination)
 
     run_id = combination["id"]
     name_options = {}
@@ -322,6 +322,7 @@ for n, row in enumerate(uq_df.iterrows()):
             "stress_balance.sia.flow_law": "isothermal_glen",
             "stress_balance.ssa.flow_law": "isothermal_glen",
             "stress_balance.blatter.flow_law": "isothermal_glen",
+            "stress_balance.sia.Glen_exponent": combination["sia_n"],
             "flow_law.isothermal_Glen.ice_softness": combination["a_glen"],
             "basal_resistance.pseudo_plastic.q": combination["pseudo_plastic_q"],
             "basal_yield_stress.mohr_coulomb.topg_to_phi.enabled": "yes",

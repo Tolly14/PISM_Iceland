@@ -10,22 +10,24 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 from pyDOE import lhs
-from scipy.stats.distributions import randint, uniform, norm
+from scipy.stats.distributions import randint, uniform, truncnorm
 
 
 dists: Dict[str, Any] = {
     "speed-calib": {
         "uq": {"a_glen": uniform(0.25e-24, 2e-24),
+               "sia_n": uniform(2, 3),
                "pseudo_plastic_q": uniform(0.4, 0.4),
                "z_min": uniform(-1000, 1000),
                "z_max": uniform(0, 1000),
                "phi_min": uniform(15, 20),
                "phi_max": uniform(25, 20),
-               "till_effective_fraction_overburden": uniform(0.02, 0.03)},
+               "till_effective_fraction_overburden": uniform(0.02, 0.04),
+               "pseudo_plastic_uthreshold": uniform(25, 175)},
         "default_values": {
             "climate": "harmonie_flux",
             "climate_file": "HARMONIE_glac_corr_1980_2016_TM.nc",
-            "runoff_file": "DMI-HIRHAM5_ERA_1980_2020_EPSG3413_4500M_MM.nc",
+            "sia_n": 3,
             "a_glen": 2e-24,
             "pseudo_plastic_q": 0.5,
             "z_min": -1000,
@@ -33,6 +35,27 @@ dists: Dict[str, Any] = {
             "phi_min": 20,
             "phi_max": 40,
             "till_effective_fraction_overburden": 0.04,
+            "pseudo_plastic_uthreshold": 100,
+        },
+    },
+    "random-calib": {
+        "uq": {"a_glen": uniform(0.25e-24, 2e-24),
+               "sia_n": uniform(2, 3),
+               "pseudo_plastic_q": uniform(0.4, 0.4),
+               "till_effective_fraction_overburden": uniform(0.02, 0.03),
+               "pseudo_plastic_uthreshold": uniform(25, 175)},
+        "default_values": {
+            "climate": "harmonie_flux",
+            "climate_file": "HARMONIE_glac_corr_1980_2016_TM.nc",
+            "sia_n": 3,
+            "a_glen": 2e-24,
+            "pseudo_plastic_q": 0.5,
+            "z_min": -1000,
+            "z_max": 100,
+            "phi_min": 20,
+            "phi_max": 40,
+            "till_effective_fraction_overburden": 0.04,
+            "pseudo_plastic_uthreshold": 100,
         },
     },
 }
