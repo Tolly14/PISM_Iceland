@@ -323,6 +323,7 @@ for n, row in enumerate(uq_df.iterrows()):
             "stress_balance.ssa.flow_law": "isothermal_glen",
             "stress_balance.blatter.flow_law": "isothermal_glen",
             "stress_balance.sia.Glen_exponent": combination["sia_n"],
+            "stress_balance.blatter.Glen_exponent": combination["sia_n"],
             "flow_law.isothermal_Glen.ice_softness": combination["a_glen"],
             "basal_resistance.pseudo_plastic.q": combination["pseudo_plastic_q"],
             "basal_yield_stress.mohr_coulomb.topg_to_phi.enabled": "yes",
