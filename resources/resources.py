@@ -14,6 +14,14 @@ import math
 import sys
 import os.path
 
+def get_path_to_config():
+    """
+    Get path to pism_config
+
+    Returns: string
+    """
+
+    return os.path.join(os.environ.get("PISM_PREFIX", ""), "share/pism/pism_config.nc")
 
 def generate_prefix_str(pism_exec):
     """
@@ -22,7 +30,14 @@ def generate_prefix_str(pism_exec):
     Returns: string
     """
 
-    return os.path.join(os.environ.get("PISM_PREFIX", ""), pism_exec)
+def generate_prefix_str(pism_exec):
+    """
+    Generate prefix string.
+
+    Returns: string
+    """
+
+    return os.path.join(os.environ.get("PISM_PREFIX", ""), f"bin/{pism_exec}")
 
 
 def generate_domain(domain):
@@ -198,7 +213,6 @@ def generate_grid_description(grid_resolution, domain, restart=False):
     except:
         print(("grid resolution {}m not recognized".format(grid_resolution)))
 
-    skip_max = 200
     mz = 401
 
     grid_div = grid_resolution / resolution_max
@@ -207,18 +221,15 @@ def generate_grid_description(grid_resolution, domain, restart=False):
     my = int(my_max / grid_div)
 
     horizontal_grid = OrderedDict()
-    horizontal_grid["Mx"] = mx
-    horizontal_grid["My"] = my
+    horizontal_grid["grid.Mx"] = mx
+    horizontal_grid["grid.My"] = my
 
     vertical_grid = OrderedDict()
-    vertical_grid["Lz"] = 4000
-    vertical_grid["Lbz"] = 0
-    vertical_grid["z_spacing"] = "equal"
-    vertical_grid["Mz"] = mz
+    vertical_grid["grid.Lz"] = 4000
+    vertical_grid["grid.Lbz"] = 0
+    vertical_grid["grid.Mz"] = mz
 
     grid_options = {}
-    grid_options["skip"] = ""
-    grid_options["skip_max"] = skip_max
 
     grid_dict = merge_dicts(horizontal_grid, vertical_grid, grid_options)
 
@@ -281,14 +292,32 @@ def generate_stress_balance(stress_balance, additional_params_dict):
 
     params_dict = OrderedDict()
     params_dict["stress_balance"] = stress_balance
-    if stress_balance in ("ssa+sia"):
+    if stress_balance in ("ssa+sia", "blatter"):
         params_dict["options_left"] = ""
-        params_dict["cfbc"] = ""
-        params_dict["kill_icebergs"] = ""
-        params_dict["part_grid"] = ""
-        params_dict["part_redist"] = ""
-        params_dict["pseudo_plastic"] = ""
-        params_dict["tauc_slippery_grounding_lines"] = ""
+        params_dict["stress_balance.calving_front_stress_bc"] = ""
+        params_dict["geometry.remove_icebergs"] = ""
+        params_dict["geometry.part_grid.enabled"] = ""
+
+    if stress_balance == "ssa+sia":
+        params_dict["time_stepping.skip.enabled"] = ""
+        params_dict["time_stepping.skip.max"] = 100
+
+    if stress_balance == "blatter":
+        params_dict["stress_balance.blatter.coarsening_factor"] = 4
+        params_dict["blatter_Mz"] = 17
+        params_dict["bp_ksp_type"] = "gmres"
+        params_dict["bp_pc_type"] = "mg"
+        params_dict["bp_pc_mg_levels"] = 3
+        params_dict["bp_mg_levels_ksp_type"] = "richardson"
+        params_dict["bp_mg_levels_pc_type"] = "sor"
+        params_dict["bp_mg_coarse_ksp_type"] = "gmres"
+        params_dict["bp_mg_coarse_pc_type"] = "bjacobi"
+        params_dict["bp_snes_monitor_ratio"] = ""
+        params_dict["bp_ksp_monitor"] = ""
+        params_dict["bp_ksp_view_singularvalues"] = ""
+        params_dict["bp_snes_ksp_ew"] = 1
+        params_dict["bp_snes_ksp_ew_version"] = 3
+        params_dict["time_stepping.adaptive_ratio"] = 25
 
     return merge_dicts(additional_params_dict, params_dict)
 

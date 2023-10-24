@@ -18,6 +18,10 @@ except:
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import sys
 
+from typing import Any, Dict, List, Union
+
+import pandas as pd
+import xarray as xr
 
 def current_script_directory():
     import inspect
@@ -208,22 +212,12 @@ done
     dirs=" ".join(list(dirs.values())),
 )
 
+master_config_file = get_path_to_config()
+
+
 # ########################################################
 # set up model initialization
 # ########################################################
-
-ssa_n = 3.25
-ssa_e = 1.0
-tefo = 0.020
-phi_min = 5.0
-phi_max = 40.0
-topg_min = -700
-topg_max = 700
-
-std_dev = 4.23
-firn = "ctrl"
-lapse_rate = 6
-bed_deformation = "ip"
 
 uq_df = pd.read_csv(ensemble_file)
 uq_df.fillna(False, inplace=True)
@@ -234,37 +228,18 @@ scripts = []
 scripts_combinded = []
 scripts_post = []
 
-simulation_start_year = options.start_year
-simulation_end_year = options.start_year + options.duration
-restart_step = options.step
+start = options.start_year
+end = options.start_year + options.duration
 
-if restart_step > (simulation_end_year - simulation_start_year):
-    print("Error:")
-    print(
-        (
-            "restart_step > (simulation_end_year - simulation_start_year): {} > {}".format(
-                restart_step, simulation_end_year - simulation_start_year
-            )
-        )
-    )
-    print("Try again")
-    import sys
-
-    sys.exit(0)
 
 batch_header, batch_system = make_batch_header(system, nn, walltime, queue)
 post_header = make_batch_post_header(system)
-
-m_sb = None
 
 for n, row in enumerate(uq_df.iterrows()):
     combination = row[1]
     print(combination)
 
-    run_id, climate, climate_file, ppq, a_glen, tefo, phi_min, phi_max, topg_min, topg_max = combination
-
-    ttphi = "{},{},{},{}".format(phi_min, phi_max, topg_min, topg_max)
-
+    run_id = combination["id"]
     name_options = {}
     try:
         name_options["id"] = "{:d}".format(int(run_id))
@@ -275,170 +250,159 @@ for n, row in enumerate(uq_df.iterrows()):
     full_outfile = "{domain}_g{grid}m_{experiment}.nc".format(domain=domain.lower, grid=grid, experiment=full_exp_name)
 
     # All runs in one script file for coarse grids that fit into max walltime
-    script_combined = join(scripts_dir, "run_g{}m_{}_j.sh".format(grid, full_exp_name))
-    with open(script_combined, "w") as f_combined:
+    script = join(scripts_dir, "run_g{}m_{}_j.sh".format(grid, full_exp_name))
+    with open(script, "w") as f:
 
-        outfiles = []
-        job_no = 0
-        for start in range(simulation_start_year, simulation_end_year, restart_step):
-            job_no += 1
+        experiment = "_".join(
+            [
+                "_".join(["_".join([k, str(v)]) for k, v in list(name_options.items())]),
+                "{}".format(start),
+                "{}".format(end),
+            ]
+        )
 
-            end = start + restart_step
+        for filename in script:
+            try:
+                os.remove(filename)
+            except OSError:
+                pass
 
-            experiment = "_".join(
-                [
-                    "_".join(["_".join([k, str(v)]) for k, v in list(name_options.items())]),
-                    "{}".format(start),
-                    "{}".format(end),
-                ]
-            )
 
-            script = join(scripts_dir, "run_g{}m_{}.sh".format(grid, experiment))
-            scripts.append(script)
+        f.write(batch_header)
+        f.write(run_header)
 
-            for filename in script:
-                try:
-                    os.remove(filename)
-                except OSError:
-                    pass
+        outfile = "{domain}_g{grid}m_{experiment}.nc".format(
+            domain=domain.lower(), grid=grid, experiment=experiment
+        )
 
-            if start == simulation_start_year:
-                f_combined.write(batch_header)
-                f_combined.write(run_header)
+        pism = generate_prefix_str(pism_exec)
 
-            with open(script, "w") as f:
+        general_params_dict = {
+            "ys": start,
+            "ye": end,
+            "calendar": "365_day",
+            "o": join(dirs["state"], outfile),
+            "o_format": oformat,
+            "config_override": "$config",
+            "stress_balance.blatter.coarsening_factor": 4,
+            "blatter_Mz": 17,
+            "bp_ksp_type": "gmres",
+            "bp_pc_type": "mg",
+            "bp_pc_mg_levels": 3,
+            "bp_mg_levels_ksp_type": "richardson",
+            "bp_mg_levels_pc_type": "sor",
+            "bp_mg_coarse_ksp_type": "gmres",
+            "bp_mg_coarse_pc_type": "bjacobi",
+            "bp_snes_monitor_ratio": "",
+            "bp_ksp_monitor" : "",
+            "bp_ksp_view_singularvalues": "", 
+            "bp_snes_ksp_ew": 1,
+            "bp_snes_ksp_ew_version": 3,
+            "stress_balance.ice_free_thickness_standard": 5,
+        }
 
-                f.write(batch_header)
-                f.write(run_header)
+        if initialstatefile is None:
+            general_params_dict["bootstrap"] = ""
+            general_params_dict["i"] = pism_dataname
+        else:
+            general_params_dict["bootstrap"] = ""
+            general_params_dict["i"] = pism_dataname
+            general_params_dict["regrid_file"] = initialstatefile
+            general_params_dict["regrid_vars"] = regridvars
 
-                outfile = "{domain}_g{grid}m_{experiment}.nc".format(
-                    domain=domain.lower(), grid=grid, experiment=experiment
-                )
+        if osize != "custom":
+            general_params_dict["o_size"] = osize
+        else:
+            general_params_dict["output.sizes.medium"] = "sftgif,velsurf_mag,usurf,mask,uvelsurf,vvelsurf"
 
-                pism = generate_prefix_str(pism_exec)
+        grid_params_dict = generate_grid_description(grid, domain)
 
-                general_params_dict = {
-                    "ys": start,
-                    "ye": end,
-                    "calendar": "365_day",
-                    "climate_forcing_buffer_size": 365,
-                    "o": join(dirs["state"], outfile),
-                    "o_format": oformat,
-                    "config_override": "$config",
-                    "stress_balance.blatter.coarsening_factor": 4,
-                    "blatter_Mz": 17,
-                    "bp_ksp_type": "gmres",
-                    "bp_pc_type": "mg",
-                    "bp_pc_mg_levels": 3,
-                    "bp_mg_levels_ksp_type": "richardson",
-                    "bp_mg_levels_pc_type": "sor",
-                    "bp_mg_coarse_ksp_type": "gmres",
-                    "bp_mg_coarse_pc_type": "bjacobi",
-                    "bp_snes_monitor_ratio": "",
-                    "bp_ksp_monitor" : "",
-                    "bp_ksp_view_singularvalues": "", 
-                    "bp_snes_ksp_ew": 1,
-                    "bp_snes_ksp_ew_version": 3,
-                    "stress_balance.ice_free_thickness_standard": 5,
-                }
 
-                if start == simulation_start_year:
-                    if initialstatefile is None:
-                        general_params_dict["bootstrap"] = ""
-                        general_params_dict["i"] = pism_dataname
-                    else:
-                        general_params_dict["bootstrap"] = ""
-                        general_params_dict["i"] = pism_dataname
-                        general_params_dict["regrid_file"] = initialstatefile
-                        general_params_dict["regrid_vars"] = regridvars
-                else:
-                    general_params_dict["i"] = regridfile
+        sb_params_dict: Dict[str, Union[str, int, float]] = {
+            "stress_balance.sia.flow_law": "isothermal_glen",
+            "stress_balance.ssa.flow_law": "isothermal_glen",
+            "stress_balance.blatter.flow_law": "isothermal_glen",
+            "flow_law.isothermal_Glen.ice_softness": combination["a_glen"],
+            "basal_resistance.pseudo_plastic.q": combination["pseudo_plastic_q"],
+            "basal_yield_stress.mohr_coulomb.topg_to_phi.enabled": "yes",
+            "basal_yield_stress.mohr_coulomb.till_effective_fraction_overburden": combination["till_effective_fraction_overburden"],
+            }
+        phi_min = combination["phi_min"]
+        phi_max = combination["phi_max"]
+        z_min = combination["z_min"]
+        z_max = combination["z_max"]
 
-                if osize != "custom":
-                    general_params_dict["o_size"] = osize
-                else:
-                    general_params_dict["output.sizes.medium"] = "sftgif,velsurf_mag,usurf,mask,uvelsurf,vvelsurf"
+        sb_params_dict[
+            "basal_yield_stress.mohr_coulomb.topg_to_phi.phi_max"
+        ] = phi_max
+        sb_params_dict[
+            "basal_yield_stress.mohr_coulomb.topg_to_phi.phi_min"
+        ] = phi_min
+        sb_params_dict[
+            "basal_yield_stress.mohr_coulomb.topg_to_phi.topg_max"
+        ] = z_max
+        sb_params_dict[
+            "basal_yield_stress.mohr_coulomb.topg_to_phi.topg_min"
+        ] = z_min
 
-                if start == simulation_start_year:
-                    grid_params_dict = generate_grid_description(grid, domain)
-                else:
-                    grid_params_dict = generate_grid_description(grid, domain, restart=True)
+        stress_balance_params_dict = generate_stress_balance(stress_balance, sb_params_dict)
 
-                sb_params_dict = {
-                    "stress_balance.sia.flow_law": "isothermal_glen",
-                    "stress_balance.ssa.flow_law": "isothermal_glen",
-                    "stress_balance.blatter.flow_law": "isothermal_glen",
-                    "flow_law.isothermal_Glen.ice_softness": a_glen,
-                    "pseudo_plastic": "",
-                    "pseudo_plastic_q": ppq,
-                    "till_effective_fraction_overburden": tefo,
-                }
+        climate_file = combination["climate_file"]
+        climate_parameters = {"surface_given_file": f"""../data_sets/climate_forcing/{climate_file}""",
+                              "surface.force_to_thickness.file": pism_dataname}
 
-                if start == simulation_start_year:
-                    sb_params_dict["topg_to_phi"] = ttphi
+        climate = combination["climate"]
+        climate_params_dict = generate_climate(climate, **climate_parameters)
 
-                # If stress balance choice is made in file, overwrite command line option
-                if m_sb:
-                    stress_balance = sb_dict[m_sb]
-                stress_balance_params_dict = generate_stress_balance(stress_balance, sb_params_dict)
+        hydro_params_dict = generate_hydrology(hydrology)
 
-                climate_parameters = {"surface_given_file": f"../data_sets/climate_forcing/{climate_file}",
-                                      "surface.force_to_thickness.file": pism_dataname}
+        calving_params_dict = {"calving": "float_kill", "front_retreat_file": pism_dataname}
 
-                climate_params_dict = generate_climate(climate, **climate_parameters)
+        scalar_ts_dict = generate_scalar_ts(
+            outfile, tsstep, start=start, end=end, odir=dirs["scalar"]
+        )
 
-                hydro_params_dict = generate_hydrology(hydrology)
+        all_params_dict = merge_dicts(
+            general_params_dict,
+            grid_params_dict,
+            stress_balance_params_dict,
+            climate_params_dict,
+            hydro_params_dict,
+            calving_params_dict,
+            scalar_ts_dict,
+        )
 
-                calving_params_dict = {"calving": "float_kill", "front_retreat_file": pism_dataname}
+        if not spatial_ts == "none":
+            exvars = spatial_ts_vars[spatial_ts]
+            spatial_ts_dict = generate_spatial_ts(outfile, exvars, exstep, odir=dirs["spatial"], split=False)
+            all_params_dict = merge_dicts(all_params_dict, spatial_ts_dict)
+            
+        print("\nChecking parameters")
+        print("------------------------------------------------------------")
+        with xr.open_dataset(master_config_file) as ds:
+            for key in all_params_dict:
+                if hasattr(ds["pism_config"], key) is False:
+                    print(f"  - {key} not found in pism_config")
+        print("------------------------------------------------------------\n")
 
-                scalar_ts_dict = generate_scalar_ts(
-                    outfile, tsstep, start=simulation_start_year, end=simulation_end_year, odir=dirs["scalar"]
-                )
+        all_params = " \\\n  ".join(["-{} {}".format(k, v) for k, v in list(all_params_dict.items())])
 
-                all_params_dict = merge_dicts(
-                    general_params_dict,
-                    grid_params_dict,
-                    stress_balance_params_dict,
-                    climate_params_dict,
-                    hydro_params_dict,
-                    calving_params_dict,
-                    scalar_ts_dict,
-                )
+        if system == "debug":
+            redirect = " 2>&1 | tee {jobs}/job"
+        else:
+            redirect = " > {jobs}/job.${job_id} 2>&1"
 
-                if not spatial_ts == "none":
-                    exvars = spatial_ts_vars[spatial_ts]
-                    spatial_ts_dict = generate_spatial_ts(outfile, exvars, exstep, odir=dirs["spatial"], split=False)
-                    all_params_dict = merge_dicts(all_params_dict, spatial_ts_dict)
+        template = "{mpido} {pism} {params}" + redirect
 
-                if stress_balance == "blatter":
-                    del all_params_dict["skip"]
-                    all_params_dict["time_stepping.adaptive_ratio"] = 25
+        context = merge_dicts(batch_system, dirs, {"pism": pism, "params": all_params})
+        cmd = template.format(**context)
 
-                all_params = " \\\n  ".join(["-{} {}".format(k, v) for k, v in list(all_params_dict.items())])
+        f.write(cmd)
+        f.write("\n")
+        f.write(batch_system.get("footer", ""))
 
-                if system == "debug":
-                    redirect = " 2>&1 | tee {jobs}/job_{job_no}"
-                else:
-                    redirect = " > {jobs}/job_{job_no}.${job_id} 2>&1"
 
-                template = "{mpido} {pism} {params}" + redirect
-
-                context = merge_dicts(batch_system, dirs, {"job_no": job_no, "pism": pism, "params": all_params})
-                cmd = template.format(**context)
-
-                f.write(cmd)
-                f.write("\n")
-                f.write(batch_system.get("footer", ""))
-
-                f_combined.write(cmd)
-                f_combined.write("\n\n")
-
-                regridfile = join(dirs["state"], outfile)
-                outfiles.append(outfile)
-
-        f_combined.write(batch_system.get("footer", ""))
-
-    scripts_combinded.append(script_combined)
+    scripts.append(script)
 
 
 scripts = uniquify_list(scripts)
